@@ -9,6 +9,7 @@ import io.shunters.coda.selector.DisruptorSingleton;
 import io.shunters.coda.selector.SelectorEvent;
 import io.shunters.coda.selector.SelectorEventTranslator;
 import io.shunters.coda.selector.SelectorHandler;
+import org.apache.log4j.xml.DOMConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +41,13 @@ public class Broker implements Runnable{
     private MetricsReporter metricsReporter;
 
     public Broker(int port) {
+
+        // TODO: log4j init. should be configurable.
+        // log4j init.
+        java.net.URL url = this.getClass().getResource("/log4j.xml");
+        System.out.println("log4j url: " + url.toString());
+        DOMConfigurator.configure(url);
+
         this.port = port;
 
         metricRegistry = MetricRegistryFactory.getInstance();
