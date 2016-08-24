@@ -13,7 +13,6 @@
 		<param name="File" value="/tmp/coda-logs/coda.log" />
 		<param name="DatePattern" value="'.'yyyy-MM-dd" />
 		<param name="Encoding" value="UTF-8" />
-		<param name="MaxBackupIndex" value="5"/>
 		<layout class="org.apache.log4j.PatternLayout">
 			<param name="ConversionPattern" value="%d %-5p [%t] %C{2} (%F:%L) - %m%n" />
 		</layout>
