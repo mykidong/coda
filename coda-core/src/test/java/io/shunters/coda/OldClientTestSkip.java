@@ -17,13 +17,15 @@ public class OldClientTestSkip {
 
     @Test
     public void run() throws Exception {
+        String host = System.getProperty("host", "localhost");
+        int port = Integer.parseInt(System.getProperty("port", "9911"));
         int MAX_THREAD = Integer.parseInt(System.getProperty("threadSize", "100"));
         long pause = Long.parseLong(System.getProperty("pause", "10"));
 
         ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD);
 
         for (int i = 0; i < MAX_THREAD; i++) {
-            executor.execute(new ClientTask(pause));
+            executor.execute(new ClientTask(host, port, pause));
         }
 
         Thread.sleep(Long.MAX_VALUE);
@@ -36,11 +38,15 @@ public class OldClientTestSkip {
         private InputStream in;
 
         private long pause;
+        private String host;
+        private int port;
 
-        public ClientTask(long pause) {
+        public ClientTask(String host, int port, long pause) {
+            this.host = host;
+            this.port = port;
             this.pause = pause;
             try {
-                clientSocket = new Socket("localhost", 9911);
+                clientSocket = new Socket(this.host, this.port);
 
                 out = clientSocket.getOutputStream();
                 in = clientSocket.getInputStream();
