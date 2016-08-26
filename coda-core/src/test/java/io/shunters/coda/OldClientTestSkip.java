@@ -19,8 +19,8 @@ public class OldClientTestSkip {
     public void run() throws Exception {
         String host = System.getProperty("host", "localhost");
         int port = Integer.parseInt(System.getProperty("port", "9911"));
-        int MAX_THREAD = Integer.parseInt(System.getProperty("threadSize", "100"));
-        long pause = Long.parseLong(System.getProperty("pause", "10"));
+        int MAX_THREAD = Integer.parseInt(System.getProperty("threadSize", "1"));
+        long pause = Long.parseLong(System.getProperty("pause", "100000"));
 
         ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD);
 

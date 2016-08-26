@@ -36,10 +36,6 @@ public class SelectorHandler implements EventHandler<SelectorEvent> {
             } else if (interestOps == SelectionKey.OP_WRITE) {
                 this.write(key, socketChannel);
             }
-
-            // wake up selector.
-            key.selector().wakeup();
-
         }catch (Exception e)
         {
             //e.printStackTrace();
