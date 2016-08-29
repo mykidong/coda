@@ -36,12 +36,6 @@ public class NioSelector {
         }
     }
 
-    public Map<String, SocketChannel> getChannelMap()
-    {
-        return this.channelMap;
-    }
-
-
 
     public void register(String channelId, SocketChannel socketChannel, int interestOps)
     {
@@ -54,6 +48,12 @@ public class NioSelector {
             throw new RuntimeException(e);
         }
     }
+
+    public void attach(String channelId, int interestOps, Object attachment)
+    {
+        this.attach(this.channelMap.get(channelId), interestOps, attachment);
+    }
+
 
     public void attach(SocketChannel socketChannel, int interestOps, Object attachment)
     {
@@ -69,6 +69,12 @@ public class NioSelector {
     public SelectionKey interestOps(SocketChannel socketChannel, int interestOps)
     {
         return socketChannel.keyFor(this.selector).interestOps(interestOps);
+    }
+
+    public SelectionKey interestOps(String channelId, int interestOps)
+    {
+
+        return this.channelMap.get(channelId).keyFor(this.selector).interestOps(interestOps);
     }
 
     public Selector wakeup()

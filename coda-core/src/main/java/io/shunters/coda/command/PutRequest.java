@@ -39,6 +39,12 @@ public class PutRequest extends AbstractToByteBuffer {
         }
     }
 
+    public static PutRequest fromByteBuffer(ByteBuffer buffer)
+    {
+        // TODO: do read buffer.
+        return null;
+    }
+
     @Override
     public int length() {
         int length = 0;
@@ -52,7 +58,6 @@ public class PutRequest extends AbstractToByteBuffer {
 
         return length;
     }
-
 
     public static class QueueMessageWrap implements ToByteBuffer
     {
@@ -77,6 +82,12 @@ public class PutRequest extends AbstractToByteBuffer {
             {
                 shardMessageWrap.writeToBuffer(buffer);
             }
+        }
+
+        public static QueueMessageWrap fromByteBuffer(ByteBuffer buffer)
+        {
+            // TODO: do read buffer.
+            return null;
         }
 
         @Override
@@ -114,6 +125,12 @@ public class PutRequest extends AbstractToByteBuffer {
                 buffer.putInt(this.shardId);
                 buffer.putInt(this.length);
                 messageList.writeToBuffer(buffer);
+            }
+
+            public static ShardMessageWrap fromByteBuffer(ByteBuffer buffer)
+            {
+                // TODO: do read buffer.
+                return null;
             }
 
             @Override

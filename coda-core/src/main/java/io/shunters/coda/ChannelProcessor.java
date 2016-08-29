@@ -1,6 +1,7 @@
 package io.shunters.coda;
 
 import com.codahale.metrics.MetricRegistry;
+import io.shunters.coda.command.RequestByteBuffer;
 import io.shunters.coda.metrics.MetricsReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,8 @@ public class ChannelProcessor extends Thread{
 
     private MetricRegistry metricRegistry;
 
+    private RequestProcessor requestProcessor;
+
     public ChannelProcessor(MetricRegistry metricRegistry)
     {
         this.metricRegistry = metricRegistry;
@@ -31,6 +34,9 @@ public class ChannelProcessor extends Thread{
         this.queue = new LinkedBlockingQueue<>();
 
         this.nioSelector = NioSelector.open();
+
+        this.requestProcessor = new RequestProcessor();
+        this.requestProcessor.start();
     }
 
     public void put(SocketChannel socketChannel)
@@ -46,7 +52,9 @@ public class ChannelProcessor extends Thread{
 
         try {
             while (true) {
-                SocketChannel socketChannel = queue.poll();
+                SocketChannel socketChannel = this.queue.poll();
+
+                // if new connection is added, register it to selector.
                 if(socketChannel != null) {
                     String channelId = NioSelector.makeChannelId(socketChannel);
                     nioSelector.register(channelId, socketChannel, SelectionKey.OP_READ);
@@ -68,11 +76,11 @@ public class ChannelProcessor extends Thread{
 
                     if(key.isReadable())
                     {
-                        this.read(key);
+                        this.request(key);
                     }
                     else if(key.isWritable())
                     {
-                        this.write(key);
+                        this.response(key);
                     }
                 }
             }
@@ -84,63 +92,94 @@ public class ChannelProcessor extends Thread{
     }
 
 
-    private void read(SelectionKey key) throws IOException {
+    private void request(SelectionKey key) throws IOException {
+
         SocketChannel socketChannel = (SocketChannel) key.channel();
 
-        ByteBuffer readBuf = ByteBuffer.allocate(1024);
+        // channel id.
+        String channelId = NioSelector.makeChannelId(socketChannel);
 
-        int bytesRead;
-        try {
-            bytesRead = socketChannel.read(readBuf);
-        } catch (IOException e) {
-            key.cancel();
-            socketChannel.close();
+        // to get total size.
+        ByteBuffer totalSizeBuffer = ByteBuffer.allocate(4);
+        socketChannel.read(totalSizeBuffer);
 
-            return;
-        }
+        totalSizeBuffer.rewind();
 
-        if (bytesRead == -1) {
-            log.info("Connection closed by client [{}]", socketChannel.socket().getRemoteSocketAddress());
+        // total size.
+        int totalSize = totalSizeBuffer.getInt();
 
-            socketChannel.close();
-            key.cancel();
-
-            return;
-        }
-
-        if(bytesRead == 0)
-        {
-            //log.info("bytesRead: [{}]", bytesRead);
-
-            return;
-        }
-
-        readBuf.flip();
-
-        byte[] dest = new byte[bytesRead];
-        readBuf.get(dest);
-
-        //log.info("incoming message: [{}]", new String(dest));
+        // subsequent bytes buffer.
+        ByteBuffer buffer = ByteBuffer.allocate(totalSize);
+        socketChannel.read(buffer);
 
 
-        String echoResponse = new String(dest) + " : from server " + Thread.currentThread().getId();
-        ByteBuffer writeBuf = ByteBuffer.wrap(echoResponse.getBytes());
+        buffer.rewind();
 
-        // NOTE: DO NOT writeBuf.flip();
+        // command id.
+        short commandId = buffer.getShort();
 
-        nioSelector.attach(socketChannel, SelectionKey.OP_WRITE, writeBuf);
+        buffer.rewind();
+
+
+        RequestByteBuffer requestByteBuffer = new RequestByteBuffer(this.nioSelector, channelId, commandId, buffer);
+
+        this.requestProcessor.put(requestByteBuffer);
 
         this.metricRegistry.meter("ChannelProcessor.read").mark();
+
+
+//        SocketChannel socketChannel = (SocketChannel) key.channel();
+//
+//        ByteBuffer readBuf = ByteBuffer.allocate(1024);
+//
+//        int bytesRead;
+//        try {
+//            bytesRead = socketChannel.read(readBuf);
+//        } catch (IOException e) {
+//            key.cancel();
+//            socketChannel.close();
+//
+//            return;
+//        }
+//
+//        if (bytesRead == -1) {
+//            log.info("Connection closed by client [{}]", socketChannel.socket().getRemoteSocketAddress());
+//
+//            socketChannel.close();
+//            key.cancel();
+//
+//            return;
+//        }
+//
+//        if(bytesRead == 0)
+//        {
+//            //log.info("bytesRead: [{}]", bytesRead);
+//
+//            return;
+//        }
+//
+//        readBuf.flip();
+//
+//        byte[] dest = new byte[bytesRead];
+//        readBuf.get(dest);
+//
+//        //log.info("incoming message: [{}]", new String(dest));
+//
+//
+//        String echoResponse = new String(dest) + " : from server " + Thread.currentThread().getId();
+//        ByteBuffer writeBuf = ByteBuffer.wrap(echoResponse.getBytes());
+//
+//        // NOTE: DO NOT writeBuf.flip();
+//
+//        nioSelector.attach(socketChannel, SelectionKey.OP_WRITE, writeBuf);
+//
+//        this.metricRegistry.meter("ChannelProcessor.read").mark();
     }
 
-    private void write(SelectionKey key) throws IOException {
+    private void response(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
 
         ByteBuffer buf = (ByteBuffer) key.attachment();
-
-        // NOTE: DO NOT buf.flip();
-
-        //log.info("ready to write buffer [{}] to connnected [{}]", buf.capacity(), socketChannel.socket().getRemoteSocketAddress());
 
         while (buf.hasRemaining()) {
             socketChannel.write(buf);
@@ -153,5 +192,4 @@ public class ChannelProcessor extends Thread{
 
         this.metricRegistry.meter("ChannelProcessor.write").mark();
     }
-
 }
