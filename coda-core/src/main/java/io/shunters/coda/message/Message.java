@@ -5,20 +5,22 @@ import io.shunters.coda.command.ToByteBuffer;
 import java.nio.ByteBuffer;
 
 /**
- * Message := crc compression timestampType timestamp key value
+ * Message := crc formatVersion compression timestampType timestamp key value
  */
 public class Message implements ToByteBuffer {
 
     private int crc;
+    private byte formatVersion;
     private byte compression;
     private byte timestampType;
     private long timestamp;
     private byte[] key;
     private byte[] value;
 
-    public Message(int crc, byte compression, byte timestampType, long timestamp, byte[] key, byte[] value)
+    public Message(int crc, byte formatVersion, byte compression, byte timestampType, long timestamp, byte[] key, byte[] value)
     {
         this.crc = crc;
+        this.formatVersion = formatVersion;
         this.compression = compression;
         this.timestampType = timestampType;
         this.timestamp = timestamp;
@@ -30,6 +32,7 @@ public class Message implements ToByteBuffer {
     @Override
     public void writeToBuffer(ByteBuffer buffer) {
         buffer.putInt(crc);
+        buffer.put(formatVersion);
         buffer.put(compression);
         buffer.put(timestampType);
         buffer.putLong(timestamp);

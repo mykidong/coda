@@ -24,7 +24,7 @@ public class ServerTestSkip {
     @Test
     public void run() throws Exception
     {
-        Broker broker = new Broker(9911);
+        Broker broker = new Broker(9911, 4);
         Thread t = new Thread(broker);
         t.start();
 

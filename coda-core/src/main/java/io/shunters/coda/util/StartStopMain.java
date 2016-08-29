@@ -42,7 +42,7 @@ public class StartStopMain {
 
 	public static void start(String conf) throws Exception
 	{
-		Broker broker = new Broker(9911);
+		Broker broker = new Broker(9911, 50);
 
 		t = new Thread(broker);
 		t.start();

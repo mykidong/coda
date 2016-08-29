@@ -5,7 +5,7 @@ import io.shunters.coda.command.ToByteBuffer;
 import java.nio.ByteBuffer;
 
 /**
- * Created by mykidong on 2016-08-28.
+ * BaseResponseHeader := messageId
  */
 public class BaseResponseHeader implements ToByteBuffer {
 

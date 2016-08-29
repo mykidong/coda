@@ -5,7 +5,7 @@ import io.shunters.coda.command.ToByteBuffer;
 import java.nio.ByteBuffer;
 
 /**
- * BaseRequestHeader := totalSize commandId version messageId clientId
+ * BaseRequestHeader := commandId version messageId clientId
  */
 public class BaseRequestHeader implements ToByteBuffer {
     private short commandId;

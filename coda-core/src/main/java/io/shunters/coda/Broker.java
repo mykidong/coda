@@ -19,7 +19,10 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 
 /**
  * Created by mykidong on 2016-08-23.
@@ -40,7 +43,13 @@ public class Broker implements Runnable{
 
     private MetricsReporter metricsReporter;
 
-    public Broker(int port) {
+    private List<ChannelProcessor> channelProcessors;
+
+    private int channelProcessorSize;
+
+    private Random random = new Random();
+
+    public Broker(int port, int channelProcessorSize) {
 
         // TODO: log4j init. should be configurable.
         // log4j init.
@@ -50,14 +59,28 @@ public class Broker implements Runnable{
 
         this.port = port;
 
+        this.channelProcessorSize = channelProcessorSize;
+
         metricRegistry = MetricRegistryFactory.getInstance();
 
         // std out reporter for metrics.
         metricsReporter = new SystemOutMetricsReporter(metricRegistry);
         metricsReporter.start();
 
-        selectorEventDisruptor = DisruptorSingleton.getInstance(SelectorEvent.FACTORY, 1024, new SelectorHandler(metricRegistry));
-        selectorEventTranslator = new SelectorEventTranslator();
+        channelProcessors = new ArrayList<>();
+        for(int i = 0; i < channelProcessorSize; i++)
+        {
+            ChannelProcessor channelProcessor = new ChannelProcessor(this.metricRegistry);
+            channelProcessor.start();
+            channelProcessors.add(channelProcessor);
+        }
+    }
+
+    private ChannelProcessor getNextChannelProcessor()
+    {
+        int randomIndex = random.nextInt(this.channelProcessorSize);
+
+        return this.channelProcessors.get(randomIndex);
     }
 
     @Override
@@ -92,11 +115,13 @@ public class Broker implements Runnable{
 
                     if (key.isAcceptable()) {
                         this.accept(key);
-                    } else if (key.isReadable()) {
-                        this.publishEvent(key);
-                    } else if (key.isWritable()) {
-                        this.publishEvent(key);
                     }
+
+//                    else if (key.isReadable()) {
+//                        this.publishEvent(key);
+//                    } else if (key.isWritable()) {
+//                        this.publishEvent(key);
+//                    }
                 }
             }
         }catch (IOException e)
@@ -112,12 +137,12 @@ public class Broker implements Runnable{
 
         SocketChannel socketChannel = serverSocketChannel.accept();
         socketChannel.configureBlocking(false);
-
-        socketChannel.register(this.selector, SelectionKey.OP_READ);
+        socketChannel.socket().setTcpNoDelay(true);
+        socketChannel.socket().setKeepAlive(true);
 
         log.info("socket channel accepted: [{}]", socketChannel.socket().getRemoteSocketAddress());
 
-        publishEvent(key, socketChannel);
+        this.getNextChannelProcessor().put(socketChannel);
     }
 
     private void publishEvent(SelectionKey key) {
