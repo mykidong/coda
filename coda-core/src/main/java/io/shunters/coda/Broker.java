@@ -1,14 +1,9 @@
 package io.shunters.coda;
 
 import com.codahale.metrics.MetricRegistry;
-import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.metrics.MetricRegistryFactory;
 import io.shunters.coda.metrics.MetricsReporter;
 import io.shunters.coda.metrics.SystemOutMetricsReporter;
-import io.shunters.coda.selector.DisruptorSingleton;
-import io.shunters.coda.selector.SelectorEvent;
-import io.shunters.coda.selector.SelectorEventTranslator;
-import io.shunters.coda.selector.SelectorHandler;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,10 +29,6 @@ public class Broker implements Runnable{
     private Selector selector;
 
     private int port;
-
-    private Disruptor<SelectorEvent> selectorEventDisruptor;
-
-    private SelectorEventTranslator selectorEventTranslator;
 
     private MetricRegistry metricRegistry;
 
@@ -116,12 +107,6 @@ public class Broker implements Runnable{
                     if (key.isAcceptable()) {
                         this.accept(key);
                     }
-
-//                    else if (key.isReadable()) {
-//                        this.publishEvent(key);
-//                    } else if (key.isWritable()) {
-//                        this.publishEvent(key);
-//                    }
                 }
             }
         }catch (IOException e)
@@ -144,15 +129,4 @@ public class Broker implements Runnable{
 
         this.getNextChannelProcessor().put(socketChannel);
     }
-
-    private void publishEvent(SelectionKey key) {
-        this.publishEvent(key, (SocketChannel) key.channel());
-    }
-
-    private void publishEvent(SelectionKey key, SocketChannel socketChannel) {
-        this.selectorEventTranslator.setKey(key);
-        this.selectorEventTranslator.setSocketChannel(socketChannel);
-        this.selectorEventDisruptor.publishEvent(this.selectorEventTranslator);
-    }
-
 }
