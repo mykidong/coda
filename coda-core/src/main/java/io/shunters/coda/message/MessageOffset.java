@@ -21,6 +21,18 @@ public class MessageOffset implements ToByteBuffer{
         this.message = message;
     }
 
+    public long getOffset() {
+        return offset;
+    }
+
+    public int getLength() {
+        return length;
+    }
+
+    public Message getMessage() {
+        return message;
+    }
+
     @Override
     public void writeToBuffer(ByteBuffer buffer) {
         buffer.putLong(offset);

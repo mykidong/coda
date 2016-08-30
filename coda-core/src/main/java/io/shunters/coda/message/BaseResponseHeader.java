@@ -17,6 +17,9 @@ public class BaseResponseHeader implements ToByteBuffer {
         this.messageId = messageId;
     }
 
+    public int getMessageId() {
+        return messageId;
+    }
 
     @Override
     public void writeToBuffer(ByteBuffer buffer) {

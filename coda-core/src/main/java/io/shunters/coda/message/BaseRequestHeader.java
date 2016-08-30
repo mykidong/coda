@@ -21,6 +21,22 @@ public class BaseRequestHeader implements ToByteBuffer {
         this.clientId = clientId;
     }
 
+    public short getCommandId() {
+        return commandId;
+    }
+
+    public short getVersion() {
+        return version;
+    }
+
+    public int getMessageId() {
+        return messageId;
+    }
+
+    public String getClientId() {
+        return clientId;
+    }
+
     @Override
     public void writeToBuffer(ByteBuffer buffer) {
         buffer.putShort(commandId);

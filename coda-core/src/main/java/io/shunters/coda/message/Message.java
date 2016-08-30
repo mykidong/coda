@@ -28,6 +28,33 @@ public class Message implements ToByteBuffer {
         this.value = value;
     }
 
+    public int getCrc() {
+        return crc;
+    }
+
+    public byte getFormatVersion() {
+        return formatVersion;
+    }
+
+    public byte getCompression() {
+        return compression;
+    }
+
+    public byte getTimestampType() {
+        return timestampType;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public byte[] getKey() {
+        return key;
+    }
+
+    public byte[] getValue() {
+        return value;
+    }
 
     @Override
     public void writeToBuffer(ByteBuffer buffer) {
@@ -66,6 +93,7 @@ public class Message implements ToByteBuffer {
         int length = 0;
 
         length += 4; // crc.
+        length += 1; // formatVersion.
         length += 1; // compression.
         length += 1; // timestampType.
         length += 8; // timestamp.

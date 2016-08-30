@@ -28,6 +28,17 @@ public class PutRequest extends AbstractToByteBuffer {
         this.queueMessageWraps = queueMessageWraps;
     }
 
+    public BaseRequestHeader getBaseRequestHeader() {
+        return baseRequestHeader;
+    }
+
+    public short getAcks() {
+        return acks;
+    }
+
+    public List<QueueMessageWrap> getQueueMessageWraps() {
+        return queueMessageWraps;
+    }
 
     @Override
     public void writeToBuffer(ByteBuffer buffer) {
@@ -78,6 +89,14 @@ public class PutRequest extends AbstractToByteBuffer {
         {
             this.queue = queue;
             this.shardMessageWraps = shardMessageWraps;
+        }
+
+        public String getQueue() {
+            return queue;
+        }
+
+        public List<ShardMessageWrap> getShardMessageWraps() {
+            return shardMessageWraps;
         }
 
         @Override
@@ -139,6 +158,18 @@ public class PutRequest extends AbstractToByteBuffer {
                 this.shardId = shardId;
                 this.length = length;
                 this.messageList = messageList;
+            }
+
+            public int getShardId() {
+                return shardId;
+            }
+
+            public int getLength() {
+                return length;
+            }
+
+            public MessageList getMessageList() {
+                return messageList;
             }
 
             @Override

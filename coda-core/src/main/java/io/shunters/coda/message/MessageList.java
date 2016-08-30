@@ -18,6 +18,11 @@ public class MessageList implements ToByteBuffer{
         this.messageOffsets = messageOffsets;
     }
 
+
+    public List<MessageOffset> getMessageOffsets() {
+        return messageOffsets;
+    }
+
     @Override
     public void writeToBuffer(ByteBuffer buffer) {
         for(MessageOffset messageOffset : messageOffsets)
