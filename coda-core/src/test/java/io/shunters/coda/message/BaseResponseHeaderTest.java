@@ -13,9 +13,8 @@ public class BaseResponseHeaderTest {
     @Test
     public void serialize()
     {
-        int messageId = 234584;
 
-        BaseResponseHeader baseResponseHeader = new BaseResponseHeader(messageId);
+        BaseResponseHeader baseResponseHeader = buildInstance();
 
         int length = baseResponseHeader.length();
 
@@ -27,6 +26,15 @@ public class BaseResponseHeaderTest {
 
         BaseResponseHeader ret = BaseResponseHeader.fromByteBuffer(buffer);
 
-        Assert.assertTrue(messageId == ret.getMessageId());
+        Assert.assertTrue(baseResponseHeader.getMessageId() == ret.getMessageId());
+    }
+
+    public static BaseResponseHeader buildInstance()
+    {
+        int messageId = 234584;
+
+        BaseResponseHeader baseResponseHeader = new BaseResponseHeader(messageId);
+
+        return baseResponseHeader;
     }
 }

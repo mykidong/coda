@@ -2,6 +2,7 @@ package io.shunters.coda.command;
 
 import io.shunters.coda.message.BaseRequestHeader;
 import io.shunters.coda.message.MessageList;
+import io.shunters.coda.message.MessageOffset;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -51,16 +52,30 @@ public class PutRequest extends AbstractToByteBuffer {
         }
     }
 
-    public static PutRequest fromByteBuffer(ByteBuffer buffer)
+    public static PutRequest fromByteBuffer(ByteBuffer buffer, int maxLength)
     {
         BaseRequestHeader baseRequestHeaderTemp = BaseRequestHeader.fromByteBuffer(buffer);
         short acksTemp = buffer.getShort();
 
+        // max length descreased.
+        maxLength -= baseRequestHeaderTemp.length(); // baseRequestHeader length.
+        maxLength -= 2; // acks.
+
         List<QueueMessageWrap> queueMessageWrapsTemp = new ArrayList<>();
+
+        int readLength = 0;
         while(buffer.hasRemaining())
         {
-            QueueMessageWrap queueMessageWrapTemp = QueueMessageWrap.fromByteBuffer(buffer);
+            // TODO: determine the max length.
+            QueueMessageWrap queueMessageWrapTemp = QueueMessageWrap.fromByteBuffer(buffer, maxLength);
+
             queueMessageWrapsTemp.add(queueMessageWrapTemp);
+
+            readLength += queueMessageWrapTemp.length();
+            if(readLength == maxLength)
+            {
+                break;
+            }
         }
 
         return new PutRequest(baseRequestHeaderTemp, acksTemp, queueMessageWrapsTemp);
@@ -78,6 +93,32 @@ public class PutRequest extends AbstractToByteBuffer {
         }
 
         return length;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuffer sb = new StringBuffer();
+
+        sb.append("baseRequestHeader: ").append("[" + baseRequestHeader.toString() + "]");
+        sb.append("acks: ").append(this.acks).append(", ");
+
+        int count = 0;
+
+        int SIZE = this.queueMessageWraps.size();
+
+        for(QueueMessageWrap queueMessageWrap : queueMessageWraps) {
+            sb.append("queueMessageWrap: ").append("[" + queueMessageWrap.toString() + "]");
+
+            count++;
+
+            if(count != SIZE)
+            {
+                sb.append(", ");
+            }
+        }
+
+        return sb.toString();
     }
 
     public static class QueueMessageWrap implements ToByteBuffer
@@ -113,7 +154,7 @@ public class PutRequest extends AbstractToByteBuffer {
             }
         }
 
-        public static QueueMessageWrap fromByteBuffer(ByteBuffer buffer)
+        public static QueueMessageWrap fromByteBuffer(ByteBuffer buffer, int maxLength)
         {
             int queueLengthTemp = buffer.getInt(); // queue length.
             byte[] queueBytesTemp = new byte[queueLengthTemp];
@@ -121,13 +162,29 @@ public class PutRequest extends AbstractToByteBuffer {
             String queueTemp = new String(queueBytesTemp);
 
             List<ShardMessageWrap> shardMessageWrapsTemp = new ArrayList<>();
+
+            // max length descreased.
+            maxLength -= 4; // queue length.
+            maxLength -= queueLengthTemp; // queue.
+
+
+            int readLength = 0;
+
             while(buffer.hasRemaining())
             {
                 ShardMessageWrap shardMessageWrapTemp = ShardMessageWrap.fromByteBuffer(buffer);
                 shardMessageWrapsTemp.add(shardMessageWrapTemp);
+
+                readLength += shardMessageWrapTemp.length();
+                if(readLength == maxLength)
+                {
+                    break;
+                }
             }
 
-            return new QueueMessageWrap(queueTemp, shardMessageWrapsTemp);
+            QueueMessageWrap queueMessageWrap = new QueueMessageWrap(queueTemp, shardMessageWrapsTemp);
+
+            return queueMessageWrap;
         }
 
         @Override
@@ -144,6 +201,31 @@ public class PutRequest extends AbstractToByteBuffer {
             }
 
             return length;
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuffer sb = new StringBuffer();
+
+            sb.append("queue: ").append(this.queue).append(", ");
+
+            int count = 0;
+
+            int SIZE = this.shardMessageWraps.size();
+
+            for(ShardMessageWrap shardMessageWrap : shardMessageWraps) {
+                sb.append("shardMessageWrap: ").append("[" + shardMessageWrap.toString() + "]");
+
+                count++;
+
+                if(count != SIZE)
+                {
+                    sb.append(", ");
+                }
+            }
+
+            return sb.toString();
         }
 
 
@@ -183,7 +265,7 @@ public class PutRequest extends AbstractToByteBuffer {
             {
                 int shardIdTemp = buffer.getInt();
                 int lengthTemp = buffer.getInt();
-                MessageList messageListTemp = MessageList.fromByteBuffer(buffer);
+                MessageList messageListTemp = MessageList.fromByteBuffer(buffer, lengthTemp);
 
                 return new ShardMessageWrap(shardIdTemp, lengthTemp, messageListTemp);
             }
@@ -198,6 +280,18 @@ public class PutRequest extends AbstractToByteBuffer {
                 length += this.messageList.length(); // messageList.
 
                 return length;
+            }
+
+            @Override
+            public String toString()
+            {
+                StringBuffer sb = new StringBuffer();
+
+                sb.append("shardId: ").append(this.shardId).append(", ");
+                sb.append("length: ").append(this.length).append(", ");
+                sb.append("messageList: ").append("[" + this.messageList.toString() + "]");
+
+                return sb.toString();
             }
         }
     }

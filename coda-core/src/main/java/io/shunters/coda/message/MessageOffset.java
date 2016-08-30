@@ -60,4 +60,16 @@ public class MessageOffset implements ToByteBuffer{
 
         return length;
     }
+
+    @Override
+    public String toString()
+    {
+        StringBuffer sb = new StringBuffer();
+
+        sb.append("offset: ").append(this.offset).append(", ");
+        sb.append("length: ").append(this.length).append(", ");
+        sb.append("message: ").append("[" + this.message.toString() + "]");
+
+        return sb.toString();
+    }
 }

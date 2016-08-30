@@ -42,4 +42,14 @@ public class BaseResponseHeader implements ToByteBuffer {
 
         return length;
     }
+
+    @Override
+    public String toString()
+    {
+        StringBuffer sb = new StringBuffer();
+
+        sb.append("messageId: ").append(this.messageId);
+
+        return sb.toString();
+    }
 }

@@ -121,7 +121,7 @@ public class ChannelProcessor extends Thread{
         buffer.rewind();
 
 
-        RequestByteBuffer requestByteBuffer = new RequestByteBuffer(this.nioSelector, channelId, commandId, buffer);
+        RequestByteBuffer requestByteBuffer = new RequestByteBuffer(this.nioSelector, channelId, totalSize, commandId, buffer);
 
         this.requestProcessor.put(requestByteBuffer);
 

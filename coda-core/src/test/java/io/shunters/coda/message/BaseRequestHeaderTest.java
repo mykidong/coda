@@ -14,12 +14,7 @@ public class BaseRequestHeaderTest {
     @Test
     public void serialize()
     {
-        short commandId = CommandProcessor.PUT_REQUEST;
-        short version = 1;
-        int messageId = 20345;
-        String clientId = "test-client-id";
-
-        BaseRequestHeader baseRequestHeader = new BaseRequestHeader(commandId, version, messageId, clientId);
+        BaseRequestHeader baseRequestHeader = buildInstance();
 
         int length = baseRequestHeader.length();
 
@@ -34,10 +29,22 @@ public class BaseRequestHeaderTest {
         BaseRequestHeader ret = BaseRequestHeader.fromByteBuffer(buffer);
 
 
-        Assert.assertTrue(commandId == ret.getCommandId());
-        Assert.assertTrue(version == ret.getVersion());
-        Assert.assertTrue(messageId == ret.getMessageId());
-        Assert.assertEquals(clientId, ret.getClientId());
+        Assert.assertTrue(baseRequestHeader.getCommandId() == ret.getCommandId());
+        Assert.assertTrue(baseRequestHeader.getVersion() == ret.getVersion());
+        Assert.assertTrue(baseRequestHeader.getMessageId() == ret.getMessageId());
+        Assert.assertEquals(baseRequestHeader.getClientId(), ret.getClientId());
+    }
+
+    public static BaseRequestHeader buildInstance()
+    {
+        short commandId = CommandProcessor.PUT_REQUEST;
+        short version = 1;
+        int messageId = 20345;
+        String clientId = "test-client-id";
+
+        BaseRequestHeader baseRequestHeader = new BaseRequestHeader(commandId, version, messageId, clientId);
+
+        return baseRequestHeader;
     }
 
 }

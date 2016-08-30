@@ -104,4 +104,19 @@ public class Message implements ToByteBuffer {
 
         return length;
     }
+
+    @Override
+    public String toString()
+    {
+        StringBuffer sb = new StringBuffer();
+
+        sb.append("crc: ").append(this.crc).append(", ");
+        sb.append("formatVersion: ").append(this.formatVersion).append(", ");
+        sb.append("compression: ").append(this.compression).append(", ");
+        sb.append("timestampType: ").append(this.timestampType).append(", ");
+        sb.append("key: ").append(new String(key)).append(", ");
+        sb.append("value: ").append(new String(value));
+
+        return sb.toString();
+    }
 }

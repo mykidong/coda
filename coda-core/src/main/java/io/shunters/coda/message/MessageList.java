@@ -31,13 +31,21 @@ public class MessageList implements ToByteBuffer{
         }
     }
 
-    public static MessageList fromByteBuffer(ByteBuffer buffer)
+    public static MessageList fromByteBuffer(ByteBuffer buffer, int maxLength)
     {
         List<MessageOffset> messageOffsetsTemp = new ArrayList<>();
+
+        int readLength = 0;
 
         while (buffer.hasRemaining()) {
             MessageOffset messageOffsetTemp = MessageOffset.fromByteBuffer(buffer);
             messageOffsetsTemp.add(messageOffsetTemp);
+
+            readLength += messageOffsetTemp.length();
+            if(readLength == maxLength)
+            {
+                break;
+            }
         }
 
         return new MessageList(messageOffsetsTemp);
@@ -53,6 +61,28 @@ public class MessageList implements ToByteBuffer{
         }
 
         return length;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuffer sb = new StringBuffer();
+
+        int count = 0;
+
+        int SIZE = messageOffsets.size();
+
+        for(MessageOffset messageOffset : messageOffsets) {
+            sb.append("messageOffset: ").append("[" + messageOffset.toString() + "]");
+
+            count++;
+
+            if(count != SIZE)
+            {
+                sb.append(", ");
+            }
+        }
+        return sb.toString();
     }
 
 }

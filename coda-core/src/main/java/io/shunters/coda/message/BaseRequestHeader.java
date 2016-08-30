@@ -74,4 +74,17 @@ public class BaseRequestHeader implements ToByteBuffer {
 
         return length;
     }
+
+    @Override
+    public String toString()
+    {
+        StringBuffer sb = new StringBuffer();
+
+        sb.append("commandId: ").append(this.commandId).append(", ");
+        sb.append("version: ").append(this.version).append(", ");
+        sb.append("messageId: ").append(this.messageId).append(", ");
+        sb.append("clientId: ").append(clientId);
+
+        return sb.toString();
+    }
 }
