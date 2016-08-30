@@ -1,5 +1,6 @@
 package io.shunters.coda.message;
 
+import io.shunters.coda.command.PutRequest;
 import io.shunters.coda.command.ToByteBuffer;
 
 import java.nio.ByteBuffer;
@@ -25,6 +26,15 @@ public class MessageOffset implements ToByteBuffer{
         buffer.putLong(offset);
         buffer.putInt(length);
         message.writeToBuffer(buffer);
+    }
+
+    public static MessageOffset fromByteBuffer(ByteBuffer buffer)
+    {
+        long offsetTemp = buffer.getLong();
+        int lengthTemp = buffer.getInt();
+        Message messageTemp = Message.fromByteBuffer(buffer);
+
+        return new MessageOffset(offsetTemp, lengthTemp, messageTemp);
     }
 
     @Override

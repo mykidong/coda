@@ -4,6 +4,7 @@ import io.shunters.coda.message.BaseRequestHeader;
 import io.shunters.coda.message.MessageList;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -41,8 +42,17 @@ public class PutRequest extends AbstractToByteBuffer {
 
     public static PutRequest fromByteBuffer(ByteBuffer buffer)
     {
-        // TODO: do read buffer.
-        return null;
+        BaseRequestHeader baseRequestHeaderTemp = BaseRequestHeader.fromByteBuffer(buffer);
+        short acksTemp = buffer.getShort();
+
+        List<QueueMessageWrap> queueMessageWrapsTemp = new ArrayList<>();
+        while(buffer.hasRemaining())
+        {
+            QueueMessageWrap queueMessageWrapTemp = QueueMessageWrap.fromByteBuffer(buffer);
+            queueMessageWrapsTemp.add(queueMessageWrapTemp);
+        }
+
+        return new PutRequest(baseRequestHeaderTemp, acksTemp, queueMessageWrapsTemp);
     }
 
     @Override
@@ -86,8 +96,19 @@ public class PutRequest extends AbstractToByteBuffer {
 
         public static QueueMessageWrap fromByteBuffer(ByteBuffer buffer)
         {
-            // TODO: do read buffer.
-            return null;
+            int queueLengthTemp = buffer.getInt(); // queue length.
+            byte[] queueBytesTemp = new byte[queueLengthTemp];
+            buffer.get(queueBytesTemp);
+            String queueTemp = new String(queueBytesTemp);
+
+            List<ShardMessageWrap> shardMessageWrapsTemp = new ArrayList<>();
+            while(buffer.hasRemaining())
+            {
+                ShardMessageWrap shardMessageWrapTemp = ShardMessageWrap.fromByteBuffer(buffer);
+                shardMessageWrapsTemp.add(shardMessageWrapTemp);
+            }
+
+            return new QueueMessageWrap(queueTemp, shardMessageWrapsTemp);
         }
 
         @Override
@@ -129,8 +150,11 @@ public class PutRequest extends AbstractToByteBuffer {
 
             public static ShardMessageWrap fromByteBuffer(ByteBuffer buffer)
             {
-                // TODO: do read buffer.
-                return null;
+                int shardIdTemp = buffer.getInt();
+                int lengthTemp = buffer.getInt();
+                MessageList messageListTemp = MessageList.fromByteBuffer(buffer);
+
+                return new ShardMessageWrap(shardIdTemp, lengthTemp, messageListTemp);
             }
 
             @Override

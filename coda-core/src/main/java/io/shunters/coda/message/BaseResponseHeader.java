@@ -23,6 +23,13 @@ public class BaseResponseHeader implements ToByteBuffer {
         buffer.putInt(messageId);
     }
 
+    public static BaseResponseHeader fromByteBuffer(ByteBuffer buffer)
+    {
+        int messageIdTemp = buffer.getInt();
+
+        return new BaseResponseHeader(messageIdTemp);
+    }
+
     @Override
     public int length() {
 

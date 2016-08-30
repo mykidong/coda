@@ -3,10 +3,11 @@ package io.shunters.coda.message;
 import io.shunters.coda.command.ToByteBuffer;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by mykidong on 2016-08-27.
+ * MessageList := [offset length Message]
  */
 public class MessageList implements ToByteBuffer{
 
@@ -23,6 +24,18 @@ public class MessageList implements ToByteBuffer{
         {
             messageOffset.writeToBuffer(buffer);
         }
+    }
+
+    public static MessageList fromByteBuffer(ByteBuffer buffer)
+    {
+        List<MessageOffset> messageOffsetsTemp = new ArrayList<>();
+
+        while (buffer.hasRemaining()) {
+            MessageOffset messageOffsetTemp = MessageOffset.fromByteBuffer(buffer);
+            messageOffsetsTemp.add(messageOffsetTemp);
+        }
+
+        return new MessageList(messageOffsetsTemp);
     }
 
     @Override

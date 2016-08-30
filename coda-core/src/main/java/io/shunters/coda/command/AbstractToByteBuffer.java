@@ -7,9 +7,11 @@ import java.nio.ByteBuffer;
  */
 public abstract class AbstractToByteBuffer implements ToByteBuffer {
 
+    @Override
     public abstract void writeToBuffer(ByteBuffer buffer);
 
 
+    @Override
     public abstract int length();
 
 

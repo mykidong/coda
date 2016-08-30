@@ -46,7 +46,7 @@ public class CommandProcessor {
             // TODO:
             // 1. put it to memstore.
             // 2. build response object.
-            // 3. convert to bytebuffer.
+            // 3. convert response to bytebuffer.
             // 4. attache response to channel with interestOps WRITE, which causes channel processor to send response to the client.
         }
         // TODO: add another commands.

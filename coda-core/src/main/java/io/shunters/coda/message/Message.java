@@ -42,6 +42,25 @@ public class Message implements ToByteBuffer {
         buffer.put(value);
     }
 
+    public static Message fromByteBuffer(ByteBuffer buffer)
+    {
+        int crcTemp = buffer.getInt();
+        byte formatVersionTemp = buffer.get();
+        byte compressionTemp = buffer.get();
+        byte timestampTypeTemp = buffer.get();
+        long timestampTemp = buffer.getLong();
+
+        int keyLengthTemp = buffer.getInt(); // key length;
+        byte[] keyTemp = new byte[keyLengthTemp];
+        buffer.get(keyTemp);
+
+        int valueLengthTemp = buffer.getInt(); // value length;
+        byte[] valueTemp = new byte[valueLengthTemp];
+        buffer.get(valueTemp);
+
+        return new Message(crcTemp, formatVersionTemp, compressionTemp, timestampTypeTemp, timestampTemp, keyTemp, valueTemp);
+    }
+
     @Override
     public int length() {
         int length = 0;
