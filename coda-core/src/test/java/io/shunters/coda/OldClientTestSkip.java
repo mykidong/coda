@@ -1,5 +1,8 @@
 package io.shunters.coda;
 
+import io.shunters.coda.command.PutRequest;
+import io.shunters.coda.command.PutRequestTest;
+import io.shunters.coda.command.PutResponse;
 import io.shunters.coda.util.TimeUtils;
 import org.junit.Test;
 
@@ -60,21 +63,43 @@ public class OldClientTestSkip {
         public void run() {
             while (true) {
                 try {
-                    String newData = "New String to write to file..." + System.currentTimeMillis();
-                    out.write(newData.getBytes());
+                    // PutRequest.
+
+                    PutRequest putRequest = PutRequestTest.buildPutRequest();
+
+                    int length = putRequest.length();
+
+                    ByteBuffer buffer = putRequest.write();
+
+                    buffer.rewind();
+
+                    int totalSize = length + 4;
+                    byte[] putRequestBytes = new byte[totalSize];
+                    buffer.get(putRequestBytes);
+
+
+                    out.write(putRequestBytes);
                     out.flush();
 
-                    byte[] readBytes = new byte[1024];
-                    int readNum = in.read(readBytes);
 
-                    ByteBuffer buf = ByteBuffer.allocate(readNum);
-                    buf.put(readBytes, 0, readNum);
-                    buf.flip();
+                    // PutResponse.
 
-                    byte[] dest = new byte[readNum];
-                    buf.get(dest);
+                    byte[] responseTotalSizeBytes = new byte[4];
 
-                    //System.out.println("response: [" + new String(dest) + "]");
+                    int readNum = in.read(responseTotalSizeBytes);
+
+                    int responseTotalSize = ByteBuffer.wrap(responseTotalSizeBytes).getInt();
+
+                    byte[] responseBytes = new byte[responseTotalSize];
+
+                    in.read(responseBytes);
+
+
+                    ByteBuffer responseBuffer = ByteBuffer.wrap(responseBytes);
+
+                    PutResponse putResponse = PutResponse.fromByteBuffer(responseBuffer);
+
+                    //System.out.println("response: [" + putResponse.toString() + "]");
 
                     TimeUtils.pause(this.pause);
 

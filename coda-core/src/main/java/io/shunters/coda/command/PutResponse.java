@@ -35,7 +35,7 @@ public class PutResponse extends AbstractToByteBuffer{
 
         baseResponseHeader.writeToBuffer(buffer);
 
-        int count = 0; // count.
+        buffer.putInt(getQueuePutResults().size()); // count.
 
         for(QueuePutResult queuePutResult : queuePutResults)
         {

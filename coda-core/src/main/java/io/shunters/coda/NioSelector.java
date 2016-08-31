@@ -1,5 +1,8 @@
 package io.shunters.coda;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
@@ -13,6 +16,8 @@ import java.util.Set;
  * Created by mykidong on 2016-08-29.
  */
 public class NioSelector {
+
+    private static Logger log = LoggerFactory.getLogger(NioSelector.class);
 
     private Selector selector;
 
@@ -51,7 +56,15 @@ public class NioSelector {
 
     public void attach(String channelId, int interestOps, Object attachment)
     {
-        this.attach(this.channelMap.get(channelId), interestOps, attachment);
+        SocketChannel socketChannel = this.channelMap.get(channelId);
+
+        if(socketChannel != null) {
+            this.attach(socketChannel, interestOps, attachment);
+        }
+        else
+        {
+            log.warn("socket channel for channelId [{}] is null.", channelId);
+        }
     }
 
 

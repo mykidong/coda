@@ -1,5 +1,12 @@
 package io.shunters.coda;
 
+import io.shunters.coda.command.PutRequest;
+import io.shunters.coda.command.PutRequestTest;
+import io.shunters.coda.command.PutResponse;
+import io.shunters.coda.message.BaseRequestHeader;
+import io.shunters.coda.message.BaseRequestHeaderTest;
+import io.shunters.coda.message.MessageList;
+import io.shunters.coda.message.MessageListTest;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.junit.Before;
 import org.junit.Test;
@@ -12,7 +19,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Created by mykidong on 2016-08-23.
@@ -92,27 +101,26 @@ public class ProducerTestSkip {
     private void readBytes(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
 
-        log.info("read bytes...");
+        // PutResponse.
 
-        ByteBuffer readBuf = ByteBuffer.allocate(1024);
+        // to get total size.
+        ByteBuffer totalSizeBuffer = ByteBuffer.allocate(4);
+        socketChannel.read(totalSizeBuffer);
 
-        int bytesRead = socketChannel.read(readBuf);
+        totalSizeBuffer.rewind();
 
-        if (bytesRead == -1) {
-            log.info("read bytes == -1");
+        // total size.
+        int totalSize = totalSizeBuffer.getInt();
 
-            socketChannel.close();
-            key.cancel();
+        // subsequent bytes buffer.
+        ByteBuffer buffer = ByteBuffer.allocate(totalSize);
+        socketChannel.read(buffer);
 
-            return;
-        }
+        buffer.rewind();
 
-        readBuf.flip();
+        PutResponse putResponse = PutResponse.fromByteBuffer(buffer);
 
-        byte[] dest = new byte[bytesRead];
-        readBuf.get(dest);
-
-        log.info("response message: [{}]", new String(dest));
+        log.info("response message: [{}]", putResponse.toString());
 
 
         // DO NOT SEND ANY MORE!
@@ -123,15 +131,19 @@ public class ProducerTestSkip {
     private void writeBytes(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
 
-        String newData = "New String to write to file..." + System.currentTimeMillis();
+        // PutRequest.
 
-        ByteBuffer buf = ByteBuffer.allocate(48);
-        buf.clear();
-        buf.put(newData.getBytes());
+        PutRequest putRequest = PutRequestTest.buildPutRequest();
 
-        buf.flip();
+        ByteBuffer buffer = putRequest.write();
 
-        socketChannel.write(buf);
+        buffer.rewind();
+
+        while (buffer.hasRemaining()) {
+            socketChannel.write(buffer);
+        }
+
+        buffer.clear();
 
         log.info("bytes written ...");
 

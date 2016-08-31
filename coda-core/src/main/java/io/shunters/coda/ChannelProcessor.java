@@ -125,7 +125,7 @@ public class ChannelProcessor extends Thread{
 
         this.requestProcessor.put(requestByteBuffer);
 
-        this.metricRegistry.meter("ChannelProcessor.read").mark();
+        //this.metricRegistry.meter("ChannelProcessor.read").mark();
 
 
 //        SocketChannel socketChannel = (SocketChannel) key.channel();
@@ -179,13 +179,15 @@ public class ChannelProcessor extends Thread{
     private void response(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
 
-        ByteBuffer buf = (ByteBuffer) key.attachment();
+        ByteBuffer buffer = (ByteBuffer) key.attachment();
 
-        while (buf.hasRemaining()) {
-            socketChannel.write(buf);
+        buffer.rewind();
+
+        while (buffer.hasRemaining()) {
+            socketChannel.write(buffer);
         }
 
-        buf.clear();
+        buffer.clear();
 
         // switch to read.
         this.nioSelector.interestOps(socketChannel, SelectionKey.OP_READ);
