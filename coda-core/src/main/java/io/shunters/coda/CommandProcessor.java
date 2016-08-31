@@ -64,7 +64,10 @@ public class CommandProcessor {
             // 3. convert response to bytebuffer.
             // 4. attache response to channel with interestOps WRITE, which causes channel processor to send response to the client.
 
+
+            // IT IS JUST TEST PURPOSE.
             PutResponse putResponse = buildPutResponse();
+
 
             responseBuffer = putResponse.write();
         }
@@ -76,8 +79,8 @@ public class CommandProcessor {
 
 
         if(responseBuffer != null) {
+            // attache response to channel with SelectionKey.OP_WRITE, which causes channel processor to send response to the client.
             nioSelector.attach(channelId, SelectionKey.OP_WRITE, responseBuffer);
-            //nioSelector.wakeup();
         }
     }
 

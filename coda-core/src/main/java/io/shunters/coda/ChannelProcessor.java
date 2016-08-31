@@ -25,8 +25,6 @@ public class ChannelProcessor extends Thread{
 
     private MetricRegistry metricRegistry;
 
-    private RequestProcessor requestProcessor;
-
     public ChannelProcessor(MetricRegistry metricRegistry)
     {
         this.metricRegistry = metricRegistry;
@@ -34,9 +32,6 @@ public class ChannelProcessor extends Thread{
         this.queue = new LinkedBlockingQueue<>();
 
         this.nioSelector = NioSelector.open();
-
-//        this.requestProcessor = new RequestProcessor();
-//        this.requestProcessor.start();
     }
 
     public void put(SocketChannel socketChannel)
@@ -126,57 +121,7 @@ public class ChannelProcessor extends Thread{
         CommandProcessor commandProcessor = new CommandProcessor(requestByteBuffer);
         commandProcessor.process();
 
-        //this.requestProcessor.put(requestByteBuffer);
-
-        //this.metricRegistry.meter("ChannelProcessor.read").mark();
-
-
-//        SocketChannel socketChannel = (SocketChannel) key.channel();
-//
-//        ByteBuffer readBuf = ByteBuffer.allocate(1024);
-//
-//        int bytesRead;
-//        try {
-//            bytesRead = socketChannel.read(readBuf);
-//        } catch (IOException e) {
-//            key.cancel();
-//            socketChannel.close();
-//
-//            return;
-//        }
-//
-//        if (bytesRead == -1) {
-//            log.info("Connection closed by client [{}]", socketChannel.socket().getRemoteSocketAddress());
-//
-//            socketChannel.close();
-//            key.cancel();
-//
-//            return;
-//        }
-//
-//        if(bytesRead == 0)
-//        {
-//            //log.info("bytesRead: [{}]", bytesRead);
-//
-//            return;
-//        }
-//
-//        readBuf.flip();
-//
-//        byte[] dest = new byte[bytesRead];
-//        readBuf.get(dest);
-//
-//        //log.info("incoming message: [{}]", new String(dest));
-//
-//
-//        String echoResponse = new String(dest) + " : from server " + Thread.currentThread().getId();
-//        ByteBuffer writeBuf = ByteBuffer.wrap(echoResponse.getBytes());
-//
-//        // NOTE: DO NOT writeBuf.flip();
-//
-//        nioSelector.attach(socketChannel, SelectionKey.OP_WRITE, writeBuf);
-//
-//        this.metricRegistry.meter("ChannelProcessor.read").mark();
+        this.metricRegistry.meter("ChannelProcessor.read").mark();
     }
 
     private void response(SelectionKey key) throws IOException {
