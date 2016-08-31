@@ -114,4 +114,20 @@ public class PutRequestTest {
 
         return new PutRequest(baseRequestHeader, acks, queueMessageWraps);
     }
+
+    @Test
+    public void serializeRequest()
+    {
+        PutRequest putRequest = buildPutRequest();
+
+        ByteBuffer buffer = putRequest.write();
+
+        buffer.rewind();
+
+        int totalSize = buffer.getInt();
+
+        PutRequest ret = PutRequest.fromByteBuffer(buffer);
+
+        Assert.assertTrue(putRequest.getAcks() == ret.getAcks());
+    }
 }

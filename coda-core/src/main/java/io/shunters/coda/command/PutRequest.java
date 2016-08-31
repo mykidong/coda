@@ -2,7 +2,6 @@ package io.shunters.coda.command;
 
 import io.shunters.coda.message.BaseRequestHeader;
 import io.shunters.coda.message.MessageList;
-import io.shunters.coda.message.MessageOffset;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

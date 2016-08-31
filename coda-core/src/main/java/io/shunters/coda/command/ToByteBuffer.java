@@ -10,6 +10,5 @@ public interface ToByteBuffer {
     public void writeToBuffer(ByteBuffer buffer);
 
     public int length();
-
 }
 
