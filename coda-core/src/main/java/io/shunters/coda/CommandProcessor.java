@@ -77,7 +77,7 @@ public class CommandProcessor {
 
         if(responseBuffer != null) {
             nioSelector.attach(channelId, SelectionKey.OP_WRITE, responseBuffer);
-            nioSelector.wakeup();
+            //nioSelector.wakeup();
         }
     }
 

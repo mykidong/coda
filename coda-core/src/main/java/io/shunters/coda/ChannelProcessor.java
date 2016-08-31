@@ -123,7 +123,10 @@ public class ChannelProcessor extends Thread{
 
         RequestByteBuffer requestByteBuffer = new RequestByteBuffer(this.nioSelector, channelId, commandId, buffer);
 
-        this.requestProcessor.put(requestByteBuffer);
+        CommandProcessor commandProcessor = new CommandProcessor(requestByteBuffer);
+        commandProcessor.process();
+
+        //this.requestProcessor.put(requestByteBuffer);
 
         //this.metricRegistry.meter("ChannelProcessor.read").mark();
 
