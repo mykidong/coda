@@ -35,8 +35,8 @@ public class ChannelProcessor extends Thread{
 
         this.nioSelector = NioSelector.open();
 
-        this.requestProcessor = new RequestProcessor();
-        this.requestProcessor.start();
+//        this.requestProcessor = new RequestProcessor();
+//        this.requestProcessor.start();
     }
 
     public void put(SocketChannel socketChannel)
