@@ -34,8 +34,6 @@ public class CommandProcessor {
 
     public void process()
     {
-        int totalSize = this.requestByteBuffer.getTotalSize();
-
         short commandId = this.requestByteBuffer.getCommandId();
 
         ByteBuffer buffer = this.requestByteBuffer.getBuffer();
@@ -43,7 +41,7 @@ public class CommandProcessor {
 
         if(commandId == PUT_REQUEST)
         {
-            PutRequest putRequest = PutRequest.fromByteBuffer(buffer, totalSize);
+            PutRequest putRequest = PutRequest.fromByteBuffer(buffer);
 
             // TODO:
             // 1. put it to memstore.

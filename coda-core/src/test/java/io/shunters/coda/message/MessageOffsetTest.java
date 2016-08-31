@@ -26,15 +26,13 @@ public class MessageOffsetTest {
         MessageOffset ret = MessageOffset.fromByteBuffer(buffer);
 
         Assert.assertTrue(messageOffset.getOffset() == ret.getOffset());
-        Assert.assertTrue(messageOffset.getLength() == ret.getLength());
     }
 
     public static MessageOffset buildInstance()
     {
         long offset = 23003039L;
         Message message = MessageTest.buildInstance();
-        int length = message.length();
 
-        return new MessageOffset(offset, length, message);
+        return new MessageOffset(offset, message);
     }
 }

@@ -1,32 +1,25 @@
 package io.shunters.coda.message;
 
-import io.shunters.coda.command.PutRequest;
 import io.shunters.coda.command.ToByteBuffer;
 
 import java.nio.ByteBuffer;
 
 /**
- * Created by mykidong on 2016-08-28.
+ * MessageOffset := offset Message
  */
 public class MessageOffset implements ToByteBuffer{
 
     private long offset;
-    private int length;
     private Message message;
 
-    public MessageOffset(long offset, int length, Message message)
+    public MessageOffset(long offset, Message message)
     {
         this.offset = offset;
-        this.length = length;
         this.message = message;
     }
 
     public long getOffset() {
         return offset;
-    }
-
-    public int getLength() {
-        return length;
     }
 
     public Message getMessage() {
@@ -36,17 +29,15 @@ public class MessageOffset implements ToByteBuffer{
     @Override
     public void writeToBuffer(ByteBuffer buffer) {
         buffer.putLong(offset);
-        buffer.putInt(length);
         message.writeToBuffer(buffer);
     }
 
     public static MessageOffset fromByteBuffer(ByteBuffer buffer)
     {
         long offsetTemp = buffer.getLong();
-        int lengthTemp = buffer.getInt();
         Message messageTemp = Message.fromByteBuffer(buffer);
 
-        return new MessageOffset(offsetTemp, lengthTemp, messageTemp);
+        return new MessageOffset(offsetTemp, messageTemp);
     }
 
     @Override
@@ -55,7 +46,6 @@ public class MessageOffset implements ToByteBuffer{
         int length = 0;
 
         length += 8; // offset.
-        length += 4; // length.
         length += this.message.length(); // message.
 
         return length;
@@ -67,7 +57,6 @@ public class MessageOffset implements ToByteBuffer{
         StringBuffer sb = new StringBuffer();
 
         sb.append("offset: ").append(this.offset).append(", ");
-        sb.append("length: ").append(this.length).append(", ");
         sb.append("message: ").append("[" + this.message.toString() + "]");
 
         return sb.toString();

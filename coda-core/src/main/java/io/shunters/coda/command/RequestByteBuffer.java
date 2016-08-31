@@ -13,18 +13,15 @@ public class RequestByteBuffer {
 
     private String channelId;
 
-    private int totalSize;
-
     private short commandId;
 
     private ByteBuffer buffer;
 
 
-    public RequestByteBuffer(NioSelector nioSelector, String channelId, int totalSize, short commandId, ByteBuffer buffer)
+    public RequestByteBuffer(NioSelector nioSelector, String channelId, short commandId, ByteBuffer buffer)
     {
         this.nioSelector = nioSelector;
         this.channelId = channelId;
-        this.totalSize = totalSize;
         this.commandId = commandId;
         this.buffer = buffer;
     }
@@ -35,10 +32,6 @@ public class RequestByteBuffer {
 
     public String getChannelId() {
         return channelId;
-    }
-
-    public int getTotalSize() {
-        return totalSize;
     }
 
     public short getCommandId() {

@@ -25,7 +25,7 @@ public class MessageListTest {
 
         buffer.rewind();
 
-        MessageList ret = MessageList.fromByteBuffer(buffer, length);
+        MessageList ret = MessageList.fromByteBuffer(buffer);
 
         Assert.assertTrue(length == ret.length());
     }

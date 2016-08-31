@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * MessageList := [offset length Message]
+ * MessageList := [MessageOffset]
  */
 public class MessageList implements ToByteBuffer{
 
@@ -25,27 +25,28 @@ public class MessageList implements ToByteBuffer{
 
     @Override
     public void writeToBuffer(ByteBuffer buffer) {
+
+        buffer.putInt(this.messageOffsets.size()); // count.
+
         for(MessageOffset messageOffset : messageOffsets)
         {
             messageOffset.writeToBuffer(buffer);
         }
     }
 
-    public static MessageList fromByteBuffer(ByteBuffer buffer, int maxLength)
+    public static MessageList fromByteBuffer(ByteBuffer buffer)
     {
+        int count = buffer.getInt();
+
         List<MessageOffset> messageOffsetsTemp = new ArrayList<>();
 
-        int readLength = 0;
+        int readCount = 0;
 
-        while (buffer.hasRemaining()) {
+        while (readCount < count) {
             MessageOffset messageOffsetTemp = MessageOffset.fromByteBuffer(buffer);
             messageOffsetsTemp.add(messageOffsetTemp);
 
-            readLength += messageOffsetTemp.length();
-            if(readLength == maxLength)
-            {
-                break;
-            }
+            readCount++;
         }
 
         return new MessageList(messageOffsetsTemp);
@@ -54,6 +55,8 @@ public class MessageList implements ToByteBuffer{
     @Override
     public int length() {
         int length = 0;
+
+        length += 4; // count.
 
         for(MessageOffset messageOffset : messageOffsets)
         {

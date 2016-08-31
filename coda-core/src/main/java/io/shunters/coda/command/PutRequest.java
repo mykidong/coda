@@ -46,36 +46,31 @@ public class PutRequest extends AbstractToByteBuffer {
         this.baseRequestHeader.writeToBuffer(buffer);
         buffer.putShort(this.acks);
 
+        buffer.putInt(this.queueMessageWraps.size()); // count.
+
         for(QueueMessageWrap queueMessageWrap : queueMessageWraps)
         {
             queueMessageWrap.writeToBuffer(buffer);
         }
     }
 
-    public static PutRequest fromByteBuffer(ByteBuffer buffer, int maxLength)
+    public static PutRequest fromByteBuffer(ByteBuffer buffer)
     {
         BaseRequestHeader baseRequestHeaderTemp = BaseRequestHeader.fromByteBuffer(buffer);
         short acksTemp = buffer.getShort();
 
-        // max length descreased.
-        maxLength -= baseRequestHeaderTemp.length(); // baseRequestHeader length.
-        maxLength -= 2; // acks.
+        int count = buffer.getInt(); // count.
 
         List<QueueMessageWrap> queueMessageWrapsTemp = new ArrayList<>();
 
-        int readLength = 0;
-        while(buffer.hasRemaining())
-        {
-            // TODO: determine the max length.
-            QueueMessageWrap queueMessageWrapTemp = QueueMessageWrap.fromByteBuffer(buffer, maxLength);
+        int readCount = 0;
 
+        while(readCount < count)
+        {
+            QueueMessageWrap queueMessageWrapTemp = QueueMessageWrap.fromByteBuffer(buffer);
             queueMessageWrapsTemp.add(queueMessageWrapTemp);
 
-            readLength += queueMessageWrapTemp.length();
-            if(readLength == maxLength)
-            {
-                break;
-            }
+            readCount++;
         }
 
         return new PutRequest(baseRequestHeaderTemp, acksTemp, queueMessageWrapsTemp);
@@ -87,6 +82,9 @@ public class PutRequest extends AbstractToByteBuffer {
 
         length += baseRequestHeader.length(); // baseRequestHeader.
         length += 2; // acks.
+
+        length += 4; // count.
+
         for(QueueMessageWrap queueMessageWrap : queueMessageWraps)
         {
             length += queueMessageWrap.length();
@@ -148,38 +146,33 @@ public class PutRequest extends AbstractToByteBuffer {
             buffer.putInt(queueBytes.length); // queue length.
             buffer.put(queueBytes);
 
+            buffer.putInt(shardMessageWraps.size()); // count.
+
             for(ShardMessageWrap shardMessageWrap : shardMessageWraps)
             {
                 shardMessageWrap.writeToBuffer(buffer);
             }
         }
 
-        public static QueueMessageWrap fromByteBuffer(ByteBuffer buffer, int maxLength)
+        public static QueueMessageWrap fromByteBuffer(ByteBuffer buffer)
         {
             int queueLengthTemp = buffer.getInt(); // queue length.
             byte[] queueBytesTemp = new byte[queueLengthTemp];
             buffer.get(queueBytesTemp);
             String queueTemp = new String(queueBytesTemp);
 
+            int count = buffer.getInt(); // count.
+
             List<ShardMessageWrap> shardMessageWrapsTemp = new ArrayList<>();
 
-            // max length descreased.
-            maxLength -= 4; // queue length.
-            maxLength -= queueLengthTemp; // queue.
+            int readCount = 0;
 
-
-            int readLength = 0;
-
-            while(buffer.hasRemaining())
+            while(readCount < count)
             {
                 ShardMessageWrap shardMessageWrapTemp = ShardMessageWrap.fromByteBuffer(buffer);
                 shardMessageWrapsTemp.add(shardMessageWrapTemp);
 
-                readLength += shardMessageWrapTemp.length();
-                if(readLength == maxLength)
-                {
-                    break;
-                }
+                readCount++;
             }
 
             QueueMessageWrap queueMessageWrap = new QueueMessageWrap(queueTemp, shardMessageWrapsTemp);
@@ -194,6 +187,8 @@ public class PutRequest extends AbstractToByteBuffer {
 
             length += 4; // queue length;
             length += queue.getBytes().length; // queue.
+
+            length += 4; // count.
 
             for(ShardMessageWrap shardMessageWrap : shardMessageWraps)
             {
@@ -232,22 +227,16 @@ public class PutRequest extends AbstractToByteBuffer {
         public static class ShardMessageWrap implements ToByteBuffer
         {
             private int shardId;
-            private int length;
             private MessageList messageList;
 
-            public ShardMessageWrap(int shardId, int length, MessageList messageList)
+            public ShardMessageWrap(int shardId, MessageList messageList)
             {
                 this.shardId = shardId;
-                this.length = length;
                 this.messageList = messageList;
             }
 
             public int getShardId() {
                 return shardId;
-            }
-
-            public int getLength() {
-                return length;
             }
 
             public MessageList getMessageList() {
@@ -257,17 +246,15 @@ public class PutRequest extends AbstractToByteBuffer {
             @Override
             public void writeToBuffer(ByteBuffer buffer) {
                 buffer.putInt(this.shardId);
-                buffer.putInt(this.length);
                 messageList.writeToBuffer(buffer);
             }
 
             public static ShardMessageWrap fromByteBuffer(ByteBuffer buffer)
             {
                 int shardIdTemp = buffer.getInt();
-                int lengthTemp = buffer.getInt();
-                MessageList messageListTemp = MessageList.fromByteBuffer(buffer, lengthTemp);
+                MessageList messageListTemp = MessageList.fromByteBuffer(buffer);
 
-                return new ShardMessageWrap(shardIdTemp, lengthTemp, messageListTemp);
+                return new ShardMessageWrap(shardIdTemp, messageListTemp);
             }
 
             @Override
@@ -288,7 +275,6 @@ public class PutRequest extends AbstractToByteBuffer {
                 StringBuffer sb = new StringBuffer();
 
                 sb.append("shardId: ").append(this.shardId).append(", ");
-                sb.append("length: ").append(this.length).append(", ");
                 sb.append("messageList: ").append("[" + this.messageList.toString() + "]");
 
                 return sb.toString();

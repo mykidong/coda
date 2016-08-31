@@ -1,5 +1,7 @@
 package io.shunters.coda.command;
 
+import io.shunters.coda.message.BaseRequestHeader;
+import io.shunters.coda.message.BaseRequestHeaderTest;
 import io.shunters.coda.message.MessageList;
 import io.shunters.coda.message.MessageListTest;
 import org.junit.Assert;
@@ -20,7 +22,6 @@ public class PutRequestTest {
         PutRequest.QueueMessageWrap.ShardMessageWrap shardMessageWrap = buildShardMessageWrap();
 
         int length = shardMessageWrap.length();
-        System.out.println("length: [" + length + "]");
 
         ByteBuffer buffer = ByteBuffer.allocate(length);
 
@@ -31,7 +32,6 @@ public class PutRequestTest {
         PutRequest.QueueMessageWrap.ShardMessageWrap ret = PutRequest.QueueMessageWrap.ShardMessageWrap.fromByteBuffer(buffer);
 
         Assert.assertTrue(shardMessageWrap.getShardId() == ret.getShardId());
-        Assert.assertTrue(shardMessageWrap.getLength() == ret.getLength());
     }
 
     public static PutRequest.QueueMessageWrap.ShardMessageWrap buildShardMessageWrap()
@@ -40,9 +40,7 @@ public class PutRequestTest {
 
         MessageList messageList = MessageListTest.buildInstance();
 
-        int length = messageList.length();
-
-        return new PutRequest.QueueMessageWrap.ShardMessageWrap(shardId, length, messageList);
+        return new PutRequest.QueueMessageWrap.ShardMessageWrap(shardId, messageList);
     }
 
 
@@ -59,7 +57,7 @@ public class PutRequestTest {
 
         buffer.rewind();
 
-        PutRequest.QueueMessageWrap ret = PutRequest.QueueMessageWrap.fromByteBuffer(buffer, length);
+        PutRequest.QueueMessageWrap ret = PutRequest.QueueMessageWrap.fromByteBuffer(buffer);
 
         Assert.assertEquals(queueMessageWrap.getQueue(), ret.getQueue());
     }
@@ -82,4 +80,38 @@ public class PutRequestTest {
     }
 
 
+    @Test
+    public void serializePutRequest()
+    {
+        PutRequest putRequest = buildPutRequest();
+
+        int length = putRequest.length();
+
+        ByteBuffer buffer = ByteBuffer.allocate(length);
+
+        putRequest.writeToBuffer(buffer);
+
+        buffer.rewind();
+
+        PutRequest ret = PutRequest.fromByteBuffer(buffer);
+
+        Assert.assertTrue(putRequest.getAcks() == ret.getAcks());
+    }
+
+
+    public static PutRequest buildPutRequest()
+    {
+        BaseRequestHeader baseRequestHeader = BaseRequestHeaderTest.buildInstance();
+        short acks = 0;
+
+        List<PutRequest.QueueMessageWrap> queueMessageWraps = new ArrayList<>();
+        for(int i = 0; i < 3; i++)
+        {
+            PutRequest.QueueMessageWrap queueMessageWrap = buildQueueMessageWrap();
+
+            queueMessageWraps.add(queueMessageWrap);
+        }
+
+        return new PutRequest(baseRequestHeader, acks, queueMessageWraps);
+    }
 }
