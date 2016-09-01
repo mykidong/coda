@@ -1,8 +1,12 @@
 package io.shunters.coda;
 
 import com.codahale.metrics.MetricRegistry;
+import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.command.RequestByteBuffer;
-import io.shunters.coda.metrics.MetricsReporter;
+import io.shunters.coda.disruptor.DisruptorSingleton;
+import io.shunters.coda.disruptor.ToRequestEvent;
+import io.shunters.coda.disruptor.ToRequestHandler;
+import io.shunters.coda.disruptor.ToRequestTranslator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +29,11 @@ public class ChannelProcessor extends Thread{
 
     private MetricRegistry metricRegistry;
 
+    private Disruptor<ToRequestEvent> toRequestEventDisruptor;
+
+    private ToRequestTranslator toRequestTranslator;
+
+
     public ChannelProcessor(MetricRegistry metricRegistry)
     {
         this.metricRegistry = metricRegistry;
@@ -32,6 +41,10 @@ public class ChannelProcessor extends Thread{
         this.queue = new LinkedBlockingQueue<>();
 
         this.nioSelector = NioSelector.open();
+
+        // ToRequest Disruptor.
+        toRequestEventDisruptor = DisruptorSingleton.getInstance("ToRequest", ToRequestEvent.FACTORY, 1024, new ToRequestHandler());
+        toRequestTranslator = new ToRequestTranslator();
     }
 
     public void put(SocketChannel socketChannel)
@@ -118,8 +131,9 @@ public class ChannelProcessor extends Thread{
 
         RequestByteBuffer requestByteBuffer = new RequestByteBuffer(this.nioSelector, channelId, commandId, buffer);
 
-        CommandProcessor commandProcessor = new CommandProcessor(requestByteBuffer);
-        commandProcessor.process();
+        // send to ToRequest handler.
+        toRequestTranslator.setRequestByteBuffer(requestByteBuffer);
+        toRequestEventDisruptor.publishEvent(toRequestTranslator);
 
         this.metricRegistry.meter("ChannelProcessor.read").mark();
     }
