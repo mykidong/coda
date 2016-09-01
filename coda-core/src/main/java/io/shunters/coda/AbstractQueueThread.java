@@ -15,5 +15,6 @@ public abstract class AbstractQueueThread extends Thread {
         this.queue.add(obj);
     }
 
-    public abstract void process(Object obj);
+    @Override
+    public abstract void run();
 }

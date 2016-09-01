@@ -28,11 +28,7 @@ public class ToRequestProcessor extends AbstractQueueThread {
     {
         try {
             while (true) {
-                Object obj = this.queue.poll(500, TimeUnit.MILLISECONDS);
-                if(obj == null)
-                {
-                    continue;
-                }
+                Object obj = this.queue.take();
 
                 RequestByteBuffer requestByteBuffer = (RequestByteBuffer) obj;
                 process(requestByteBuffer);
@@ -43,11 +39,8 @@ public class ToRequestProcessor extends AbstractQueueThread {
         }
     }
 
-    @Override
-    public void process(Object obj)
+    private void process(RequestByteBuffer requestByteBuffer)
     {
-        RequestByteBuffer requestByteBuffer = (RequestByteBuffer) obj;
-
         String channelId = requestByteBuffer.getChannelId();
         short commandId = requestByteBuffer.getCommandId();
         ByteBuffer buffer = requestByteBuffer.getBuffer();

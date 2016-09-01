@@ -19,11 +19,7 @@ public class ShardPutRequestProcessor extends AbstractQueueThread {
     {
         try {
             while (true) {
-                Object obj = this.queue.poll(500, TimeUnit.MILLISECONDS);
-                if(obj == null)
-                {
-                    continue;
-                }
+                Object obj = this.queue.take();
 
                 ShardPutRequestEvent shardPutRequestEvent = (ShardPutRequestEvent) obj;
                 process(shardPutRequestEvent);
@@ -34,11 +30,8 @@ public class ShardPutRequestProcessor extends AbstractQueueThread {
         }
     }
 
-    @Override
-    public void process(Object obj)
+    private void process(ShardPutRequestEvent shardPutRequestEvent)
     {
-        ShardPutRequestEvent shardPutRequestEvent = (ShardPutRequestEvent) obj;
-
         BaseEvent baseEvent = shardPutRequestEvent.getBaseEvent();
 
         PutRequest putRequest = shardPutRequestEvent.getPutRequest();
