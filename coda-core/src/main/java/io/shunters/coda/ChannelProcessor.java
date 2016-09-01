@@ -67,7 +67,7 @@ public class ChannelProcessor extends Thread {
     public void run() {
 
         // init. disruptor.
-        initDisruptor();
+        //initDisruptor();
 
         try {
             while (true) {
@@ -135,14 +135,14 @@ public class ChannelProcessor extends Thread {
 
         RequestByteBuffer requestByteBuffer = new RequestByteBuffer(this.nioSelector, channelId, commandId, buffer);
 
-        //this.toRequestProcessor.put(requestByteBuffer);
+        this.toRequestProcessor.put(requestByteBuffer);
 
 //        CommandProcessor commandProcessor = new CommandProcessor(requestByteBuffer);
 //        commandProcessor.process();
 
         // send to ToRequest handler.
-        toRequestTranslator.setRequestByteBuffer(requestByteBuffer);
-        toRequestEventDisruptor.publishEvent(toRequestTranslator);
+//        toRequestTranslator.setRequestByteBuffer(requestByteBuffer);
+//        toRequestEventDisruptor.publishEvent(toRequestTranslator);
 
         this.metricRegistry.meter("ChannelProcessor.read").mark();
     }
