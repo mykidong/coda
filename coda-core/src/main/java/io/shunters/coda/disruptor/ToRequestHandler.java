@@ -1,6 +1,7 @@
 package io.shunters.coda.disruptor;
 
 import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.CommandProcessor;
 import io.shunters.coda.NioSelector;
 import io.shunters.coda.command.PutRequest;
@@ -14,6 +15,16 @@ import java.nio.channels.SelectionKey;
  * Created by mykidong on 2016-09-01.
  */
 public class ToRequestHandler implements EventHandler<ToRequestEvent> {
+
+    private Disruptor<ShardPutRequestEvent> shardPutRequestEventDisruptor;
+    private ShardPutRequestTranslator shardPutRequestTranslator;
+
+    public ToRequestHandler()
+    {
+        String disruptorName = "ShardPutRequest-" + Thread.currentThread().getId();
+        shardPutRequestEventDisruptor = DisruptorBuilder.newInstance(disruptorName, ShardPutRequestEvent.FACTORY, 1024, new ShardPutRequestHandler());
+        shardPutRequestTranslator = new ShardPutRequestTranslator();
+    }
 
 
     @Override
@@ -35,18 +46,10 @@ public class ToRequestHandler implements EventHandler<ToRequestEvent> {
         {
             PutRequest putRequest = PutRequest.fromByteBuffer(buffer);
 
-            // TODO:
-            // 1. put it to memstore.
-            // 2. build response object.
-            // 3. convert response to bytebuffer.
-            // 4. attache response to channel with interestOps WRITE, which causes channel processor to send response to the client.
-
-
-            // IT IS JUST TEST PURPOSE.
-            PutResponse putResponse = CommandProcessor.buildPutResponse();
-
-
-            responseBuffer = putResponse.write();
+            // send to ShardPutRequest disruptor.
+            shardPutRequestTranslator.setBaseEvent(new BaseEvent(channelId, nioSelector));
+            shardPutRequestTranslator.setPutRequest(putRequest);
+            shardPutRequestEventDisruptor.publishEvent(shardPutRequestTranslator);
         }
         // TODO: add another commands.
         else

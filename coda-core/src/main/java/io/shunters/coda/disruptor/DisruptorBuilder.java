@@ -32,7 +32,7 @@ public class DisruptorBuilder {
 
                     disruptorMap = new ConcurrentHashMap<>();
 
-                    Disruptor disruptor = newInstance(factory, bufferSize, handlers);
+                    Disruptor disruptor = newInstance(disruptorName, factory, bufferSize, handlers);
 
                     disruptorMap.put(disruptorName, disruptor);
 
@@ -44,7 +44,7 @@ public class DisruptorBuilder {
         {
             synchronized(lock) {
                 if (!disruptorMap.containsKey(disruptorName)) {
-                    Disruptor disruptor = newInstance(factory, bufferSize, handlers);
+                    Disruptor disruptor = newInstance(disruptorName, factory, bufferSize, handlers);
 
                     disruptorMap.put(disruptorName, disruptor);
 
@@ -59,7 +59,7 @@ public class DisruptorBuilder {
         return disruptorMap.get(disruptorName);
     }
 
-    public static <T> Disruptor newInstance(EventFactory<T> factory, int bufferSize, EventHandler<T>... handlers) {
+    public static <T> Disruptor newInstance(String disruptorName, EventFactory<T> factory, int bufferSize, EventHandler<T>... handlers) {
         Disruptor disruptor = new Disruptor(factory,
                 bufferSize,
                 Executors.newCachedThreadPool(),
@@ -69,6 +69,8 @@ public class DisruptorBuilder {
         disruptor.handleEventsWith(handlers);
 
         disruptor.start();
+
+        log.info("disruptor [{}] returned...", disruptorName);
 
         return disruptor;
     }
