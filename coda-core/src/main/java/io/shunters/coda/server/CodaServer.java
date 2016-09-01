@@ -1,9 +1,10 @@
-package io.shunters.coda;
+package io.shunters.coda.server;
 
 import com.codahale.metrics.MetricRegistry;
 import io.shunters.coda.metrics.MetricRegistryFactory;
 import io.shunters.coda.metrics.MetricsReporter;
 import io.shunters.coda.metrics.SystemOutMetricsReporter;
+import io.shunters.coda.pipeline.ChannelProcessor;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,9 +23,9 @@ import java.util.Random;
 /**
  * Created by mykidong on 2016-08-23.
  */
-public class Broker implements Runnable{
+public class CodaServer implements Runnable{
 
-    private static Logger log = LoggerFactory.getLogger(Broker.class);
+    private static Logger log = LoggerFactory.getLogger(CodaServer.class);
 
     private Selector selector;
 
@@ -40,7 +41,7 @@ public class Broker implements Runnable{
 
     private Random random = new Random();
 
-    public Broker(int port, int channelProcessorSize) {
+    public CodaServer(int port, int channelProcessorSize) {
 
         // TODO: log4j init. should be configurable.
         // log4j init.
@@ -86,7 +87,7 @@ public class Broker implements Runnable{
             // server socket registered for accept.
             serverSocketChannel.register(this.selector, SelectionKey.OP_ACCEPT);
 
-            log.info("broker is listening on [{}]...", this.port);
+            log.info("coda server is listening on [{}]...", this.port);
 
             while (true) {
                 int readyChannels = this.selector.select();

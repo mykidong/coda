@@ -1,12 +1,7 @@
-package io.shunters.coda;
+package io.shunters.coda.pipeline;
 
 import com.codahale.metrics.MetricRegistry;
-import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.command.RequestByteBuffer;
-import io.shunters.coda.disruptor.DisruptorBuilder;
-import io.shunters.coda.disruptor.ToRequestEvent;
-import io.shunters.coda.disruptor.ToRequestHandler;
-import io.shunters.coda.disruptor.ToRequestTranslator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,10 +24,6 @@ public class ChannelProcessor extends Thread {
 
     private MetricRegistry metricRegistry;
 
-    private Disruptor<ToRequestEvent> toRequestEventDisruptor;
-
-    private ToRequestTranslator toRequestTranslator;
-
     private ToRequestProcessor toRequestProcessor;
 
 
@@ -45,29 +36,15 @@ public class ChannelProcessor extends Thread {
 
         this.toRequestProcessor = new ToRequestProcessor();
         this.toRequestProcessor.start();
-
     }
 
     public void put(SocketChannel socketChannel) {
         this.queue.add(socketChannel);
-
         this.nioSelector.wakeup();
     }
 
-    private void initDisruptor()
-    {
-        // ToRequest Disruptor.
-        String disruptorName = "ToRequest-" + Thread.currentThread().getId();
-        toRequestEventDisruptor = DisruptorBuilder.newInstance(disruptorName, ToRequestEvent.FACTORY, 1024, new ToRequestHandler());
-        toRequestTranslator = new ToRequestTranslator();
-    }
-
-
     @Override
     public void run() {
-
-        // init. disruptor.
-        //initDisruptor();
 
         try {
             while (true) {
@@ -132,17 +109,10 @@ public class ChannelProcessor extends Thread {
 
         buffer.rewind();
 
-
         RequestByteBuffer requestByteBuffer = new RequestByteBuffer(this.nioSelector, channelId, commandId, buffer);
 
+        // send to ToRequestProcessor.
         this.toRequestProcessor.put(requestByteBuffer);
-
-//        CommandProcessor commandProcessor = new CommandProcessor(requestByteBuffer);
-//        commandProcessor.process();
-
-        // send to ToRequest handler.
-//        toRequestTranslator.setRequestByteBuffer(requestByteBuffer);
-//        toRequestEventDisruptor.publishEvent(toRequestTranslator);
 
         this.metricRegistry.meter("ChannelProcessor.read").mark();
     }

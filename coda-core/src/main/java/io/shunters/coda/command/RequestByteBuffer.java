@@ -1,6 +1,6 @@
 package io.shunters.coda.command;
 
-import io.shunters.coda.NioSelector;
+import io.shunters.coda.pipeline.NioSelector;
 
 import java.nio.ByteBuffer;
 

@@ -1,6 +1,6 @@
 package io.shunters.coda.util;
 
-import io.shunters.coda.Broker;
+import io.shunters.coda.server.CodaServer;
 
 
 public class StartStopMain {
@@ -42,9 +42,9 @@ public class StartStopMain {
 
 	public static void start(String conf) throws Exception
 	{
-		Broker broker = new Broker(9911, 50);
+		CodaServer server = new CodaServer(9911, 50);
 
-		t = new Thread(broker);
+		t = new Thread(server);
 		t.start();
 	}  	
 

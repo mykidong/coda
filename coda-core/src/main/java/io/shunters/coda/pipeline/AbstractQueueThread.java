@@ -1,4 +1,4 @@
-package io.shunters.coda;
+package io.shunters.coda.pipeline;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;

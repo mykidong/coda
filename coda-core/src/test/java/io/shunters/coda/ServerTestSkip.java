@@ -1,5 +1,6 @@
 package io.shunters.coda;
 
+import io.shunters.coda.server.CodaServer;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,7 +25,7 @@ public class ServerTestSkip {
     @Test
     public void run() throws Exception
     {
-        Broker broker = new Broker(9911, 4);
+        CodaServer broker = new CodaServer(9911, 4);
         Thread t = new Thread(broker);
         t.start();
 
