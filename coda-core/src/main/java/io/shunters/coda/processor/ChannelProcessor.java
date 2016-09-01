@@ -1,4 +1,4 @@
-package io.shunters.coda.pipeline;
+package io.shunters.coda.processor;
 
 import com.codahale.metrics.MetricRegistry;
 import io.shunters.coda.command.RequestByteBuffer;

@@ -1,6 +1,6 @@
 package io.shunters.coda.message;
 
-import io.shunters.coda.pipeline.ToRequestProcessor;
+import io.shunters.coda.processor.ToRequestProcessor;
 import org.junit.Assert;
 import org.junit.Test;
 

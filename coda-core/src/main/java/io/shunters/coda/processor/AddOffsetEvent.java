@@ -1,18 +1,16 @@
-package io.shunters.coda.pipeline;
+package io.shunters.coda.processor;
 
-import com.lmax.disruptor.EventFactory;
 import io.shunters.coda.command.PutRequest;
 
 /**
  * Created by mykidong on 2016-09-01.
  */
-public class ShardPutRequestEvent {
-
+public class AddOffsetEvent {
     private BaseEvent baseEvent;
 
     private PutRequest putRequest;
 
-    public ShardPutRequestEvent(BaseEvent baseEvent, PutRequest putRequest)
+    public AddOffsetEvent(BaseEvent baseEvent, PutRequest putRequest)
     {
         this.baseEvent = baseEvent;
         this.putRequest = putRequest;

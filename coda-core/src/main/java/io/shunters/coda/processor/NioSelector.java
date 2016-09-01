@@ -1,4 +1,4 @@
-package io.shunters.coda.pipeline;
+package io.shunters.coda.processor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

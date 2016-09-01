@@ -68,7 +68,7 @@ public class PutRequestTest {
         String queue = "any-queue";
         List<PutRequest.QueueMessageWrap.ShardMessageWrap> shardMessageWraps = new ArrayList<>();
 
-        for(int i = 0; i < 1; i++)
+        for(int i = 0; i < 5; i++)
         {
             PutRequest.QueueMessageWrap.ShardMessageWrap shardMessageWrap = buildShardMessageWrap();
             shardMessageWraps.add(shardMessageWrap);
@@ -105,7 +105,7 @@ public class PutRequestTest {
         short acks = 0;
 
         List<PutRequest.QueueMessageWrap> queueMessageWraps = new ArrayList<>();
-        for(int i = 0; i < 1; i++)
+        for(int i = 0; i < 3; i++)
         {
             PutRequest.QueueMessageWrap queueMessageWrap = buildQueueMessageWrap();
 

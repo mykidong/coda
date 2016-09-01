@@ -1,7 +1,8 @@
-package io.shunters.coda.pipeline;
+package io.shunters.coda.processor;
 
 import io.shunters.coda.command.PutRequest;
 import io.shunters.coda.command.RequestByteBuffer;
+import io.shunters.coda.offset.OffsetManager;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -28,12 +29,11 @@ public class ToRequestProcessor extends AbstractQueueThread {
     public static final short DESCRIBE_GROUPS_REQUEST = 305;
     public static final short LIST_GROUPS_REQUEST = 306;
 
-    private ShardPutRequestProcessor shardPutRequestProcessor;
+    private AddOffsetProcessor addOffsetProcessor;
 
     public ToRequestProcessor()
     {
-        this.shardPutRequestProcessor = new ShardPutRequestProcessor();
-        this.shardPutRequestProcessor.start();
+        addOffsetProcessor = AddOffsetProcessor.singleton(OffsetManager.singleton());
     }
 
 
@@ -66,9 +66,9 @@ public class ToRequestProcessor extends AbstractQueueThread {
         {
             PutRequest putRequest = PutRequest.fromByteBuffer(buffer);
 
-            ShardPutRequestEvent shardPutRequestEvent = new ShardPutRequestEvent(new BaseEvent(channelId, nioSelector), putRequest);
+            AddOffsetEvent addOffsetEvent = new AddOffsetEvent(new BaseEvent(channelId, nioSelector), putRequest);
 
-            shardPutRequestProcessor.put(shardPutRequestEvent);
+            addOffsetProcessor.put(addOffsetEvent);
         }
         // TODO: add another commands.
         else

@@ -4,7 +4,7 @@ import com.codahale.metrics.MetricRegistry;
 import io.shunters.coda.metrics.MetricRegistryFactory;
 import io.shunters.coda.metrics.MetricsReporter;
 import io.shunters.coda.metrics.SystemOutMetricsReporter;
-import io.shunters.coda.pipeline.ChannelProcessor;
+import io.shunters.coda.processor.ChannelProcessor;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

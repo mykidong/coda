@@ -1,4 +1,4 @@
-package io.shunters.coda.pipeline;
+package io.shunters.coda.processor;
 
 /**
  * Created by mykidong on 2016-09-01.

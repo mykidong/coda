@@ -33,7 +33,7 @@ public class MessageListTest {
     public static MessageList buildInstance() {
 
         List<MessageOffset> messageOffsets = new ArrayList<>();
-        for(int i = 0; i < 1; i++)
+        for(int i = 0; i < 5; i++)
         {
             MessageOffset messageOffset = MessageOffsetTest.buildInstance();
             messageOffsets.add(messageOffset);
