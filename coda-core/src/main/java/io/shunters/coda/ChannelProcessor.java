@@ -122,12 +122,12 @@ public class ChannelProcessor extends Thread {
 
         RequestByteBuffer requestByteBuffer = new RequestByteBuffer(this.nioSelector, channelId, commandId, buffer);
 
-//        CommandProcessor commandProcessor = new CommandProcessor(requestByteBuffer);
-//        commandProcessor.process();
+        CommandProcessor commandProcessor = new CommandProcessor(requestByteBuffer);
+        commandProcessor.process();
 
         // send to ToRequest handler.
-        toRequestTranslator.setRequestByteBuffer(requestByteBuffer);
-        toRequestEventDisruptor.publishEvent(toRequestTranslator);
+//        toRequestTranslator.setRequestByteBuffer(requestByteBuffer);
+//        toRequestEventDisruptor.publishEvent(toRequestTranslator);
 
         this.metricRegistry.meter("ChannelProcessor.read").mark();
     }
