@@ -72,18 +72,18 @@ public class AddOffsetProcessor extends AbstractQueueThread {
                 List<MessageOffset> messageOffsetList = messageList.getMessageOffsets();
                 for(MessageOffset messageOffset : messageOffsetList)
                 {
-//                    // get current offset for the shard of the queue.
-//                    QueueShard queueShard = new QueueShard(queue, shardId);
-//                    long currentOffset = offsetHandler.getCurrentOffset(queueShard);
-//
-//                    // increase offset.
-//                    currentOffset++;
-//
-//                    // set message offset for the shard of the queue.
-//                    messageOffset.setOffset(currentOffset);
-//
-//                    // update offset for the shard of the queue.
-//                    offsetHandler.updateOffset(queueShard, currentOffset);
+                    // get current offset for the shard of the queue.
+                    QueueShard queueShard = new QueueShard(queue, shardId);
+                    long currentOffset = offsetHandler.getCurrentOffset(queueShard);
+
+                    // increase offset.
+                    currentOffset++;
+
+                    // set message offset for the shard of the queue.
+                    messageOffset.setOffset(currentOffset);
+
+                    // update offset for the shard of the queue.
+                    offsetHandler.updateOffset(queueShard, currentOffset);
 
 
                     Message message = messageOffset.getMessage();
