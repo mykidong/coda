@@ -76,7 +76,7 @@ public class ShardPutRequestProcessor extends AbstractQueueThread {
         String queue = "some-queue-name";
 
         List<PutResponse.QueuePutResult.ShardPutResult> shardPutResults = new ArrayList<>();
-        for(int i = 0; i < 5; i++)
+        for(int i = 0; i < 3; i++)
         {
             PutResponse.QueuePutResult.ShardPutResult shardPutResult = buildShardPutResult();
             shardPutResults.add(shardPutResult);
@@ -91,7 +91,7 @@ public class ShardPutRequestProcessor extends AbstractQueueThread {
 
         List<PutResponse.QueuePutResult> queuePutResults = new ArrayList<>();
 
-        for(int i = 0; i < 7; i++)
+        for(int i = 0; i < 2; i++)
         {
             PutResponse.QueuePutResult queuePutResult = buildQueuePutResult();
             queuePutResults.add(queuePutResult);
