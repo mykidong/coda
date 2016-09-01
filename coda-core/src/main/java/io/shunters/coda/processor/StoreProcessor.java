@@ -25,24 +25,7 @@ public class StoreProcessor extends Thread{
 
     private ConcurrentMap<QueueShard, BlockingQueue<StoreEvent>> queueShardStoreEventQueueMap;
 
-    public static StoreProcessor singleton()
-    {
-        if(storeProcessor == null)
-        {
-            synchronized (lock)
-            {
-                if(storeProcessor == null)
-                {
-                    storeProcessor = new StoreProcessor();
-                    storeProcessor.start();
-                }
-            }
-        }
-
-        return storeProcessor;
-    }
-
-    private StoreProcessor()
+    public StoreProcessor()
     {
         this.queueShardStoreEventQueueMap = new ConcurrentHashMap<>();
     }

@@ -6,6 +6,7 @@ import io.shunters.coda.offset.OffsetManager;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by mykidong on 2016-09-01.
@@ -33,7 +34,8 @@ public class ToRequestProcessor extends AbstractQueueThread {
 
     public ToRequestProcessor()
     {
-        addOffsetProcessor = AddOffsetProcessor.singleton(OffsetManager.singleton());
+        addOffsetProcessor = new AddOffsetProcessor(OffsetManager.singleton());
+        addOffsetProcessor.start();
     }
 
 

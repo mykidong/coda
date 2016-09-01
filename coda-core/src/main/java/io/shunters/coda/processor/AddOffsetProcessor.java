@@ -9,6 +9,7 @@ import io.shunters.coda.offset.OffsetHandler;
 import io.shunters.coda.offset.QueueShard;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by mykidong on 2016-09-01.
@@ -23,28 +24,12 @@ public class AddOffsetProcessor extends AbstractQueueThread {
 
     private StoreProcessor storeProcessor;
 
-    public static AddOffsetProcessor singleton(OffsetHandler offsetHandler)
-    {
-        if(addOffsetProcessor == null)
-        {
-            synchronized (lock)
-            {
-                if(addOffsetProcessor == null)
-                {
-                    addOffsetProcessor = new AddOffsetProcessor(offsetHandler);
-                    addOffsetProcessor.start();
-                }
-            }
-        }
-
-        return addOffsetProcessor;
-    }
-
-    private AddOffsetProcessor(OffsetHandler offsetHandler)
+    public AddOffsetProcessor(OffsetHandler offsetHandler)
     {
         this.offsetHandler = offsetHandler;
 
-        this.storeProcessor = StoreProcessor.singleton();
+        this.storeProcessor = new StoreProcessor();
+        this.storeProcessor.start();
     }
 
 
