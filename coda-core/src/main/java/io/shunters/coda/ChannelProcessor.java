@@ -3,7 +3,7 @@ package io.shunters.coda;
 import com.codahale.metrics.MetricRegistry;
 import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.command.RequestByteBuffer;
-import io.shunters.coda.disruptor.DisruptorSingleton;
+import io.shunters.coda.disruptor.DisruptorBuilder;
 import io.shunters.coda.disruptor.ToRequestEvent;
 import io.shunters.coda.disruptor.ToRequestHandler;
 import io.shunters.coda.disruptor.ToRequestTranslator;
@@ -19,7 +19,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 
-public class ChannelProcessor extends Thread{
+public class ChannelProcessor extends Thread {
 
     private static Logger log = LoggerFactory.getLogger(Broker.class);
 
@@ -34,8 +34,7 @@ public class ChannelProcessor extends Thread{
     private ToRequestTranslator toRequestTranslator;
 
 
-    public ChannelProcessor(MetricRegistry metricRegistry)
-    {
+    public ChannelProcessor(MetricRegistry metricRegistry) {
         this.metricRegistry = metricRegistry;
 
         this.queue = new LinkedBlockingQueue<>();
@@ -43,12 +42,11 @@ public class ChannelProcessor extends Thread{
         this.nioSelector = NioSelector.open();
 
         // ToRequest Disruptor.
-        toRequestEventDisruptor = DisruptorSingleton.getInstance("ToRequest", ToRequestEvent.FACTORY, 1024, new ToRequestHandler());
+        toRequestEventDisruptor = DisruptorBuilder.newInstance(ToRequestEvent.FACTORY, 1024, new ToRequestHandler());
         toRequestTranslator = new ToRequestTranslator();
     }
 
-    public void put(SocketChannel socketChannel)
-    {
+    public void put(SocketChannel socketChannel) {
         this.queue.add(socketChannel);
 
         this.nioSelector.wakeup();
@@ -63,38 +61,31 @@ public class ChannelProcessor extends Thread{
                 SocketChannel socketChannel = this.queue.poll();
 
                 // if new connection is added, register it to selector.
-                if(socketChannel != null) {
+                if (socketChannel != null) {
                     String channelId = NioSelector.makeChannelId(socketChannel);
                     nioSelector.register(channelId, socketChannel, SelectionKey.OP_READ);
                 }
 
                 int ready = this.nioSelector.select();
-                if(ready == 0)
-                {
+                if (ready == 0) {
                     continue;
                 }
 
                 Iterator<SelectionKey> iter = this.nioSelector.selectedKeys().iterator();
 
-                while(iter.hasNext())
-                {
+                while (iter.hasNext()) {
                     SelectionKey key = iter.next();
 
                     iter.remove();
 
-                    if(key.isReadable())
-                    {
+                    if (key.isReadable()) {
                         this.request(key);
-                    }
-                    else if(key.isWritable())
-                    {
+                    } else if (key.isWritable()) {
                         this.response(key);
                     }
                 }
             }
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -131,12 +122,12 @@ public class ChannelProcessor extends Thread{
 
         RequestByteBuffer requestByteBuffer = new RequestByteBuffer(this.nioSelector, channelId, commandId, buffer);
 
-        CommandProcessor commandProcessor = new CommandProcessor(requestByteBuffer);
-        commandProcessor.process();
+//        CommandProcessor commandProcessor = new CommandProcessor(requestByteBuffer);
+//        commandProcessor.process();
 
         // send to ToRequest handler.
-//        toRequestTranslator.setRequestByteBuffer(requestByteBuffer);
-//        toRequestEventDisruptor.publishEvent(toRequestTranslator);
+        toRequestTranslator.setRequestByteBuffer(requestByteBuffer);
+        toRequestEventDisruptor.publishEvent(toRequestTranslator);
 
         this.metricRegistry.meter("ChannelProcessor.read").mark();
     }

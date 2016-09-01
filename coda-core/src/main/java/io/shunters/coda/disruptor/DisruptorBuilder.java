@@ -15,16 +15,16 @@ import java.util.concurrent.Executors;
 /**
  * Created by mykidong on 2016-09-01.
  */
-public class DisruptorSingleton {
+public class DisruptorBuilder {
 
-    private static Logger log = LoggerFactory.getLogger(DisruptorSingleton.class);
+    private static Logger log = LoggerFactory.getLogger(DisruptorBuilder.class);
 
     private static ConcurrentMap<String, Disruptor> disruptorMap;
 
     private static final Object lock = new Object();
 
 
-    public static <T> Disruptor getInstance(String disruptorName, EventFactory<T> factory, int bufferSize, EventHandler<T>... handlers)
+    public static <T> Disruptor singleton(String disruptorName, EventFactory<T> factory, int bufferSize, EventHandler<T>... handlers)
     {
         if(disruptorMap == null) {
             synchronized(lock) {
@@ -32,11 +32,11 @@ public class DisruptorSingleton {
 
                     disruptorMap = new ConcurrentHashMap<>();
 
-                    Disruptor disruptor = getDisruptor(factory, bufferSize, handlers);
+                    Disruptor disruptor = newInstance(factory, bufferSize, handlers);
 
                     disruptorMap.put(disruptorName, disruptor);
 
-                    log.info("disruptorMap is initialized, disruptorName: [" + disruptorName + "]");
+                    log.info("disruptor map is initialized, and new disruptor [" + disruptorName + "] added...");
                 }
             }
         }
@@ -44,11 +44,14 @@ public class DisruptorSingleton {
         {
             synchronized(lock) {
                 if (!disruptorMap.containsKey(disruptorName)) {
-                    Disruptor disruptor = getDisruptor(factory, bufferSize, handlers);
+                    Disruptor disruptor = newInstance(factory, bufferSize, handlers);
 
                     disruptorMap.put(disruptorName, disruptor);
 
-                    log.info("disruptorName: [" + disruptorName + "] not exists, new disruptor put to map.");
+                    log.info("disruptor [" + disruptorName + "] does not exist, new disruptor put to map...");
+                }
+                else {
+                    log.info("disruptor [{}] called from map...", disruptorName);
                 }
             }
         }
@@ -56,7 +59,7 @@ public class DisruptorSingleton {
         return disruptorMap.get(disruptorName);
     }
 
-    private static <T> Disruptor getDisruptor(EventFactory<T> factory, int bufferSize, EventHandler<T>[] handlers) {
+    public static <T> Disruptor newInstance(EventFactory<T> factory, int bufferSize, EventHandler<T>... handlers) {
         Disruptor disruptor = new Disruptor(factory,
                 bufferSize,
                 Executors.newCachedThreadPool(),
