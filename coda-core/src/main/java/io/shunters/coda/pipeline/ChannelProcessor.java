@@ -9,7 +9,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -24,8 +27,9 @@ public class ChannelProcessor extends Thread {
 
     private MetricRegistry metricRegistry;
 
-    private ToRequestProcessor toRequestProcessor;
+    private List<ToRequestProcessor> toRequestProcessorList;
 
+    private Random random = new Random();
 
     public ChannelProcessor(MetricRegistry metricRegistry) {
         this.metricRegistry = metricRegistry;
@@ -34,8 +38,22 @@ public class ChannelProcessor extends Thread {
 
         this.nioSelector = NioSelector.open();
 
-        this.toRequestProcessor = new ToRequestProcessor();
-        this.toRequestProcessor.start();
+        // TODO: to be configurable.
+        int toRquestProcessorSize = 4;
+        toRequestProcessorList = new ArrayList<>();
+        for(int i = 0; i < toRquestProcessorSize; i++) {
+            ToRequestProcessor toRequestProcessor = new ToRequestProcessor();
+            toRequestProcessor.start();
+
+            toRequestProcessorList.add(toRequestProcessor);
+        }
+    }
+
+    private ToRequestProcessor getNextToRequestProcessor()
+    {
+        int next = random.nextInt(this.toRequestProcessorList.size());
+
+        return this.toRequestProcessorList.get(next);
     }
 
     public void put(SocketChannel socketChannel) {
@@ -112,7 +130,7 @@ public class ChannelProcessor extends Thread {
         RequestByteBuffer requestByteBuffer = new RequestByteBuffer(this.nioSelector, channelId, commandId, buffer);
 
         // send to ToRequestProcessor.
-        this.toRequestProcessor.put(requestByteBuffer);
+        this.getNextToRequestProcessor().put(requestByteBuffer);
 
         this.metricRegistry.meter("ChannelProcessor.read").mark();
     }

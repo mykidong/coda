@@ -47,6 +47,8 @@ public class ShardPutRequestProcessor extends AbstractQueueThread {
 
         // attache response to channel with SelectionKey.OP_WRITE, which causes channel processor to send response to the client.
         nioSelector.attach(channelId, SelectionKey.OP_WRITE, responseBuffer);
+
+        // wakeup must be called.
         nioSelector.wakeup();
     }
 
