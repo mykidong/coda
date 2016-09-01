@@ -21,7 +21,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class ChannelProcessor extends Thread {
 
-    private static Logger log = LoggerFactory.getLogger(Broker.class);
+    private static Logger log = LoggerFactory.getLogger(ChannelProcessor.class);
 
     private BlockingQueue<SocketChannel> queue;
 
@@ -33,6 +33,8 @@ public class ChannelProcessor extends Thread {
 
     private ToRequestTranslator toRequestTranslator;
 
+    private ToRequestProcessor toRequestProcessor;
+
 
     public ChannelProcessor(MetricRegistry metricRegistry) {
         this.metricRegistry = metricRegistry;
@@ -41,10 +43,9 @@ public class ChannelProcessor extends Thread {
 
         this.nioSelector = NioSelector.open();
 
-        // ToRequest Disruptor.
-        String disruptorName = "ToRequest-" + Thread.currentThread().getId();
-        toRequestEventDisruptor = DisruptorBuilder.newInstance(disruptorName, ToRequestEvent.FACTORY, 1024, new ToRequestHandler());
-        toRequestTranslator = new ToRequestTranslator();
+        this.toRequestProcessor = new ToRequestProcessor();
+        this.toRequestProcessor.start();
+
     }
 
     public void put(SocketChannel socketChannel) {
@@ -53,9 +54,20 @@ public class ChannelProcessor extends Thread {
         this.nioSelector.wakeup();
     }
 
+    private void initDisruptor()
+    {
+        // ToRequest Disruptor.
+        String disruptorName = "ToRequest-" + Thread.currentThread().getId();
+        toRequestEventDisruptor = DisruptorBuilder.newInstance(disruptorName, ToRequestEvent.FACTORY, 1024, new ToRequestHandler());
+        toRequestTranslator = new ToRequestTranslator();
+    }
+
 
     @Override
     public void run() {
+
+        // init. disruptor.
+        //initDisruptor();
 
         try {
             while (true) {
@@ -123,12 +135,14 @@ public class ChannelProcessor extends Thread {
 
         RequestByteBuffer requestByteBuffer = new RequestByteBuffer(this.nioSelector, channelId, commandId, buffer);
 
+        this.toRequestProcessor.put(requestByteBuffer);
+
 //        CommandProcessor commandProcessor = new CommandProcessor(requestByteBuffer);
 //        commandProcessor.process();
 
         // send to ToRequest handler.
-        toRequestTranslator.setRequestByteBuffer(requestByteBuffer);
-        toRequestEventDisruptor.publishEvent(toRequestTranslator);
+//        toRequestTranslator.setRequestByteBuffer(requestByteBuffer);
+//        toRequestEventDisruptor.publishEvent(toRequestTranslator);
 
         this.metricRegistry.meter("ChannelProcessor.read").mark();
     }

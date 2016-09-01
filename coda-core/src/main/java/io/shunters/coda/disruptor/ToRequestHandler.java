@@ -33,11 +33,8 @@ public class ToRequestHandler implements EventHandler<ToRequestEvent> {
         RequestByteBuffer requestByteBuffer = toRequestEvent.getRequestByteBuffer();
 
         String channelId = requestByteBuffer.getChannelId();
-
         short commandId = requestByteBuffer.getCommandId();
-
         ByteBuffer buffer = requestByteBuffer.getBuffer();
-
         NioSelector nioSelector = requestByteBuffer.getNioSelector();
 
         ByteBuffer responseBuffer = null;
