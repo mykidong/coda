@@ -38,7 +38,8 @@ public class OffsetManager implements OffsetHandler{
 
     @Override
     public long getCurrentOffset(QueueShard queueShard) {
-        synchronized (lock) {
+        synchronized (queueShardOffsetMap)
+        {
             if(this.queueShardOffsetMap.containsKey(queueShard))
             {
                 return this.queueShardOffsetMap.get(queueShard);
@@ -51,7 +52,7 @@ public class OffsetManager implements OffsetHandler{
 
     @Override
     public void updateOffset(QueueShard queueShard, long offset) {
-        synchronized (lock)
+        synchronized (queueShardOffsetMap)
         {
             this.queueShardOffsetMap.put(queueShard, offset);
         }

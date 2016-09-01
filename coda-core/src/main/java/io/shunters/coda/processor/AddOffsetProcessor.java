@@ -1,24 +1,21 @@
 package io.shunters.coda.processor;
 
 import io.shunters.coda.command.PutRequest;
-import io.shunters.coda.message.BaseRequestHeader;
-import io.shunters.coda.message.Message;
-import io.shunters.coda.message.MessageList;
-import io.shunters.coda.message.MessageOffset;
+import io.shunters.coda.command.PutResponse;
+import io.shunters.coda.message.*;
 import io.shunters.coda.offset.OffsetHandler;
 import io.shunters.coda.offset.QueueShard;
 
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by mykidong on 2016-09-01.
  */
 public class AddOffsetProcessor extends AbstractQueueThread {
-
-    private static AddOffsetProcessor addOffsetProcessor;
-
-    private final static Object lock = new Object();
 
     private OffsetHandler offsetHandler;
 
@@ -40,7 +37,6 @@ public class AddOffsetProcessor extends AbstractQueueThread {
                 Object obj = this.queue.take();
 
                 AddOffsetEvent addOffsetEvent = (AddOffsetEvent) obj;
-
                 process(addOffsetEvent);
             }
         }catch (InterruptedException e)
@@ -62,7 +58,6 @@ public class AddOffsetProcessor extends AbstractQueueThread {
         int messageId = baseRequestHeader.getMessageId();
 
         List<PutRequest.QueueMessageWrap> queueMessageWrapList = putRequest.getQueueMessageWraps();
-
         for(PutRequest.QueueMessageWrap queueMessageWrap : queueMessageWrapList)
         {
             String queue = queueMessageWrap.getQueue();
@@ -105,10 +100,76 @@ public class AddOffsetProcessor extends AbstractQueueThread {
                 // construct StoreEvent.
                 StoreEvent storeEvent = new StoreEvent(baseEvent, messageId, new QueueShard(queue, shardId), messageList);
 
+
+                // TODO: selector does not read channels correctly.
                 // send to store processor.
-                storeProcessor.put(storeEvent);
+                //storeProcessor.put(storeEvent);
             }
         }
 
+
+
+        // IT IS JUST TEST PURPOSE.
+        PutResponse putResponse = buildPutResponse();
+
+        ByteBuffer responseBuffer = putResponse.write();
+
+        String channelId = baseEvent.getChannelId();
+        NioSelector nioSelector = baseEvent.getNioSelector();
+
+        // attache response to channel with SelectionKey.OP_WRITE, which causes channel processor to send response to the client.
+        nioSelector.attach(channelId, SelectionKey.OP_WRITE, responseBuffer);
+
+        // wakeup must be called.
+        nioSelector.wakeup();
+    }
+
+
+    public static BaseResponseHeader buildInstance()
+    {
+        int messageId = 234584;
+
+        BaseResponseHeader baseResponseHeader = new BaseResponseHeader(messageId);
+
+        return baseResponseHeader;
+    }
+
+    public static PutResponse.QueuePutResult.ShardPutResult buildShardPutResult()
+    {
+        int shardId = 1;
+        short shardErrorCode = 0;
+        long offset = 33424;
+        long timestamp = new Date().getTime();
+
+        return new PutResponse.QueuePutResult.ShardPutResult(shardId, shardErrorCode, offset, timestamp);
+    }
+
+    public static PutResponse.QueuePutResult buildQueuePutResult()
+    {
+        String queue = "some-queue-name";
+
+        List<PutResponse.QueuePutResult.ShardPutResult> shardPutResults = new ArrayList<>();
+        for(int i = 0; i < 3; i++)
+        {
+            PutResponse.QueuePutResult.ShardPutResult shardPutResult = buildShardPutResult();
+            shardPutResults.add(shardPutResult);
+        }
+
+        return new PutResponse.QueuePutResult(queue, shardPutResults);
+    }
+
+    public static PutResponse buildPutResponse()
+    {
+        BaseResponseHeader baseResponseHeader = buildInstance();
+
+        List<PutResponse.QueuePutResult> queuePutResults = new ArrayList<>();
+
+        for(int i = 0; i < 2; i++)
+        {
+            PutResponse.QueuePutResult queuePutResult = buildQueuePutResult();
+            queuePutResults.add(queuePutResult);
+        }
+
+        return new PutResponse(baseResponseHeader, queuePutResults);
     }
 }
