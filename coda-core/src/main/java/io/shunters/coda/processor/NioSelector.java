@@ -54,6 +54,17 @@ public class NioSelector {
         }
     }
 
+    public void register(SocketChannel socketChannel, int interestOps)
+    {
+
+        try {
+            socketChannel.register(this.selector, interestOps);
+        }catch (ClosedChannelException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     public void attach(String channelId, int interestOps, Object attachment)
     {
@@ -83,6 +94,14 @@ public class NioSelector {
     public SelectionKey interestOps(SocketChannel socketChannel, int interestOps)
     {
         return socketChannel.keyFor(this.selector).interestOps(interestOps);
+    }
+
+
+    public void interestOpsWithAttachment(String channelId, int interestOps, Object attachment)
+    {
+
+        SelectionKey selectionKey = interestOps(channelId, interestOps);
+        selectionKey.attach(attachment);
     }
 
     public SelectionKey interestOps(String channelId, int interestOps)

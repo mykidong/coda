@@ -4,7 +4,8 @@ import com.codahale.metrics.MetricRegistry;
 import io.shunters.coda.metrics.MetricRegistryFactory;
 import io.shunters.coda.metrics.MetricsReporter;
 import io.shunters.coda.metrics.SystemOutMetricsReporter;
-import io.shunters.coda.processor.ChannelProcessor;
+import io.shunters.coda.processor.ReadChannelProcessor;
+import io.shunters.coda.processor.WriteChannelProcessor;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +36,7 @@ public class CodaServer implements Runnable{
 
     private MetricsReporter metricsReporter;
 
-    private List<ChannelProcessor> channelProcessors;
+    private List<ReadChannelProcessor> readChannelProcessors;
 
     private int channelProcessorSize;
 
@@ -59,21 +60,26 @@ public class CodaServer implements Runnable{
         metricsReporter = new SystemOutMetricsReporter(metricRegistry);
         metricsReporter.start();
 
-        channelProcessors = new ArrayList<>();
+        readChannelProcessors = new ArrayList<>();
         for(int i = 0; i < channelProcessorSize; i++)
         {
-            ChannelProcessor channelProcessor = new ChannelProcessor(this.metricRegistry);
-            channelProcessor.start();
-            channelProcessors.add(channelProcessor);
+            WriteChannelProcessor writeChannelProcessor = new WriteChannelProcessor(this.metricRegistry);
+            writeChannelProcessor.start();
+
+            ReadChannelProcessor readChannelProcessor = new ReadChannelProcessor(this.metricRegistry, writeChannelProcessor);
+            readChannelProcessor.start();
+
+            readChannelProcessors.add(readChannelProcessor);
         }
     }
 
-    private ChannelProcessor getNextChannelProcessor()
+    private ReadChannelProcessor getNextReadChannelProcessor()
     {
         int randomIndex = random.nextInt(this.channelProcessorSize);
 
-        return this.channelProcessors.get(randomIndex);
+        return this.readChannelProcessors.get(randomIndex);
     }
+
 
     @Override
     public void run()  {
@@ -128,6 +134,7 @@ public class CodaServer implements Runnable{
 
         log.info("socket channel accepted: [{}]", socketChannel.socket().getRemoteSocketAddress());
 
-        this.getNextChannelProcessor().put(socketChannel);
+        // put socket channel to read channel processor.
+        this.getNextReadChannelProcessor().put(socketChannel);
     }
 }

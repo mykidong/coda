@@ -3,53 +3,41 @@ package io.shunters.coda.processor;
 import io.shunters.coda.command.PutResponse;
 import io.shunters.coda.message.BaseResponseHeader;
 import io.shunters.coda.message.MessageList;
+import io.shunters.coda.offset.QueueShard;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Created by mykidong on 2016-09-01.
  */
-public class StoreProcessor extends AbstractQueueThread{
+public class StoreProcessor extends AbstractQueueThread<StoreEvent>{
 
     public StoreProcessor()
     {
     }
 
+
     @Override
-    public void run() {
-        try {
-            while (true)
-            {
-                Object obj = this.queue.take();
-
-                StoreEvent storeEvent = (StoreEvent) obj;
-
-                process(storeEvent);
-            }
-        }catch (InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-    }
-
-
-    private void process(StoreEvent storeEvent)
+    public void process(StoreEvent storeEvent)
     {
         // TODO: sort StoreEvent by shard of the queue.
 
-
-
+        QueueShard queueShard = storeEvent.getQueueShard();
         MessageList messageList = storeEvent.getMessageList();
 
         // TODO: Save MessageList to Memstore for the shard of the queue.
 
         BaseEvent baseEvent = storeEvent.getBaseEvent();
 
+        // IT IS JUST TEST PURPOSE.
+        sendResponse(baseEvent);
+    }
+
+    private void sendResponse(BaseEvent baseEvent) {
         // IT IS JUST TEST PURPOSE.
         PutResponse putResponse = buildPutResponse();
 

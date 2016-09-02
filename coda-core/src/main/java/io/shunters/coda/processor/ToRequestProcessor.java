@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by mykidong on 2016-09-01.
  */
-public class ToRequestProcessor extends AbstractQueueThread {
+public class ToRequestProcessor extends AbstractQueueThread<RequestByteBuffer> {
 
     public static final short META_REQUEST = 0;
 
@@ -40,22 +40,7 @@ public class ToRequestProcessor extends AbstractQueueThread {
 
 
     @Override
-    public void run()
-    {
-        try {
-            while (true) {
-                Object obj = this.queue.take();
-
-                RequestByteBuffer requestByteBuffer = (RequestByteBuffer) obj;
-                process(requestByteBuffer);
-            }
-        }catch (InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-    }
-
-    private void process(RequestByteBuffer requestByteBuffer)
+    public void process(RequestByteBuffer requestByteBuffer)
     {
         String channelId = requestByteBuffer.getChannelId();
         short commandId = requestByteBuffer.getCommandId();
