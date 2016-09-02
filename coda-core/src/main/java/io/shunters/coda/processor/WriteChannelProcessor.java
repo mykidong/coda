@@ -2,6 +2,7 @@ package io.shunters.coda.processor;
 
 import com.codahale.metrics.MetricRegistry;
 import io.shunters.coda.command.RequestByteBuffer;
+import io.shunters.coda.util.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,6 +85,7 @@ public class WriteChannelProcessor extends Thread {
 
         if(buffer == null)
         {
+            TimeUtils.pause(500000000);
             return;
         }
 
