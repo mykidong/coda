@@ -5,7 +5,6 @@ import io.shunters.coda.metrics.MetricRegistryFactory;
 import io.shunters.coda.metrics.MetricsReporter;
 import io.shunters.coda.metrics.SystemOutMetricsReporter;
 import io.shunters.coda.processor.ChannelProcessor;
-import io.shunters.coda.processor.WriteChannelProcessor;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +15,10 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
 
 /**
  * Created by mykidong on 2016-08-23.
@@ -60,10 +62,7 @@ public class CodaServer implements Runnable{
         channelProcessors = new ArrayList<>();
         for(int i = 0; i < channelProcessorSize; i++)
         {
-            WriteChannelProcessor writeChannelProcessor = new WriteChannelProcessor(this.metricRegistry);
-            writeChannelProcessor.start();
-
-            ChannelProcessor channelProcessor = new ChannelProcessor(this.metricRegistry, writeChannelProcessor);
+            ChannelProcessor channelProcessor = new ChannelProcessor(this.metricRegistry);
             channelProcessor.start();
 
             channelProcessors.add(channelProcessor);
