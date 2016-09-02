@@ -93,17 +93,29 @@ public class ChannelProcessor extends Thread {
 
         // to get total size.
         ByteBuffer totalSizeBuffer = ByteBuffer.allocate(4);
-        socketChannel.read(totalSizeBuffer);
+        int readBytes = socketChannel.read(totalSizeBuffer);
+        if(readBytes <= 0)
+        {
+            log.info("read bytes [{}] too low", readBytes);
+
+            return;
+        }
 
         totalSizeBuffer.rewind();
 
         // total size.
         int totalSize = totalSizeBuffer.getInt();
+        // if totalSize is less than the length of BaseRequestHeader.
+        if(totalSize < (2 + 2 + 4 + 4))
+        {
+            log.info("total size [{}] too low", totalSize);
+
+            return;
+        }
 
         // subsequent bytes buffer.
         ByteBuffer buffer = ByteBuffer.allocate(totalSize);
         socketChannel.read(buffer);
-
 
         buffer.rewind();
 

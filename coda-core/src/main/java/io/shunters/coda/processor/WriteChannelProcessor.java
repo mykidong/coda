@@ -89,11 +89,6 @@ public class WriteChannelProcessor extends Thread {
 
         buffer.rewind();
 
-        if(buffer.capacity() < 4)
-        {
-            return;
-        }
-
         while (buffer.hasRemaining()) {
             socketChannel.write(buffer);
         }
