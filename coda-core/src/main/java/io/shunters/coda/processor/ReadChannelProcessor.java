@@ -93,9 +93,8 @@ public class ReadChannelProcessor extends Thread {
         if(readBytes <= 0)
         {
             log.info("read bytes [{}] from channel...", readBytes);
-
-            //socketChannel.close();
-            //key.cancel();
+            socketChannel.close();
+            key.cancel();
 
             return;
         }
@@ -107,6 +106,8 @@ public class ReadChannelProcessor extends Thread {
         if(totalSize < 2)
         {
             log.info("total size [{}] too low...", totalSize);
+            socketChannel.close();
+            key.cancel();
 
             return;
         }
@@ -118,9 +119,8 @@ public class ReadChannelProcessor extends Thread {
         if(readBytes <= 0)
         {
             log.info("read bytes [{}] from channel...", readBytes);
-
-            //socketChannel.close();
-            //key.cancel();
+            socketChannel.close();
+            key.cancel();
 
             return;
         }
