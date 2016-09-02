@@ -55,35 +55,33 @@ public class AddOffsetProcessor extends AbstractQueueThread<AddOffsetEvent> {
             for(PutRequest.QueueMessageWrap.ShardMessageWrap shardMessageWrap : shardMessageWrapList)
             {
                 int shardId = shardMessageWrap.getShardId();
-
                 MessageList messageList = shardMessageWrap.getMessageList();
-
                 List<MessageOffset> messageOffsetList = messageList.getMessageOffsets();
 
                 // get current offset for the shard of the queue.
                 QueueShard queueShard = new QueueShard(queue, shardId);
 
-//                // get current offset for the shard of the queue.
-//                long currentOffset = offsetHandler.getCurrentOffsetAndIncrease(queueShard, messageOffsetList.size());
-//
-//                for(MessageOffset messageOffset : messageOffsetList)
-//                {
-//                    // increase offset.
-//                    currentOffset++;
-//
-//                    // set message offset.
-//                    messageOffset.setOffset(currentOffset);
-//
-//                    Message message = messageOffset.getMessage();
-//
-//                    // message compression.
-//                    byte compression = message.getCompression();
-//
-//                    // TODO:
-//                    // if message is compressioned, message value bytes is compressed MessageList
-//                    // which must be decompressed and splitted into individual Messages.
-//                    byte[] value = message.getValue();
-//                }
+                // TODO: getting current offset is a bottleneck cause.
+                // get current offset for the shard of the queue.
+                long currentOffset = offsetHandler.getCurrentOffsetAndIncrease(queueShard, messageOffsetList.size());
+                for(MessageOffset messageOffset : messageOffsetList)
+                {
+                    // increase offset.
+                    currentOffset++;
+
+                    // set message offset.
+                    messageOffset.setOffset(currentOffset);
+
+                    Message message = messageOffset.getMessage();
+
+                    // message compression.
+                    byte compression = message.getCompression();
+
+                    // TODO:
+                    // if message is compressioned, message value bytes is compressed MessageList
+                    // which must be decompressed and splitted into individual Messages.
+                    byte[] value = message.getValue();
+                }
 
 
                 // construct QueueShardMessageList of StoreEvent.
