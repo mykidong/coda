@@ -12,6 +12,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 
 public class WriteChannelProcessor extends Thread {
@@ -43,7 +44,7 @@ public class WriteChannelProcessor extends Thread {
 
         try {
             while (true) {
-                SocketChannel socketChannel = this.queue.poll();
+                SocketChannel socketChannel = this.queue.poll(500, TimeUnit.MILLISECONDS);
 
                 // if new connection is added, register it to selector.
                 if (socketChannel != null) {
@@ -69,7 +70,10 @@ public class WriteChannelProcessor extends Thread {
                     }
                 }
             }
-        } catch (IOException e) {
+        }catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
