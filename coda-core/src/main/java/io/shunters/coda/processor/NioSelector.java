@@ -54,18 +54,6 @@ public class NioSelector {
         }
     }
 
-    public void register(SocketChannel socketChannel, int interestOps)
-    {
-
-        try {
-            socketChannel.register(this.selector, interestOps);
-        }catch (ClosedChannelException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-
     public void attach(String channelId, int interestOps, Object attachment)
     {
         SocketChannel socketChannel = this.channelMap.get(channelId);
