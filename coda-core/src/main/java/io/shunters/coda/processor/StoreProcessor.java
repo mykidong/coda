@@ -9,12 +9,16 @@ import java.nio.channels.SelectionKey;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Created by mykidong on 2016-09-01.
  */
 public class StoreProcessor extends AbstractQueueThread{
 
+    public StoreProcessor()
+    {
+    }
 
     @Override
     public void run() {

@@ -4,6 +4,7 @@ import io.shunters.coda.command.PutRequest;
 import io.shunters.coda.command.PutResponse;
 import io.shunters.coda.message.*;
 import io.shunters.coda.offset.OffsetHandler;
+import io.shunters.coda.offset.OffsetManager;
 import io.shunters.coda.offset.QueueShard;
 
 import java.nio.ByteBuffer;
@@ -17,16 +18,16 @@ import java.util.List;
  */
 public class AddOffsetProcessor extends AbstractQueueThread {
 
-    private OffsetHandler offsetHandler;
-
     private StoreProcessor storeProcessor;
 
-    public AddOffsetProcessor(OffsetHandler offsetHandler)
-    {
-        this.offsetHandler = offsetHandler;
+    private OffsetHandler offsetHandler;
 
+    public AddOffsetProcessor()
+    {
         this.storeProcessor = new StoreProcessor();
         this.storeProcessor.start();
+
+        offsetHandler = OffsetManager.singleton();
     }
 
 
@@ -70,22 +71,20 @@ public class AddOffsetProcessor extends AbstractQueueThread {
                 MessageList messageList = shardMessageWrap.getMessageList();
 
                 List<MessageOffset> messageOffsetList = messageList.getMessageOffsets();
+
+                // get current offset for the shard of the queue.
+                QueueShard queueShard = new QueueShard(queue, shardId);
+
+                // get current offset for the shard of the queue.
+                long currentOffset = offsetHandler.getCurrentOffsetAndIncrease(queueShard, messageOffsetList.size());
+
                 for(MessageOffset messageOffset : messageOffsetList)
                 {
-                    // TODO: bottleneck cause.
-                    // get current offset for the shard of the queue.
-//                    QueueShard queueShard = new QueueShard(queue, shardId);
-//                    long currentOffset = offsetHandler.getCurrentOffset(queueShard);
-//
-//                    // increase offset.
-//                    currentOffset++;
-//
-//                    // set message offset for the shard of the queue.
-//                    messageOffset.setOffset(currentOffset);
-//
-//                    // update offset for the shard of the queue.
-//                    offsetHandler.updateOffset(queueShard, currentOffset);
+                    // increase offset.
+                    currentOffset++;
 
+                    // set message offset.
+                    messageOffset.setOffset(currentOffset);
 
                     Message message = messageOffset.getMessage();
 
@@ -100,7 +99,6 @@ public class AddOffsetProcessor extends AbstractQueueThread {
 
                 // construct StoreEvent.
                 StoreEvent storeEvent = new StoreEvent(baseEvent, messageId, new QueueShard(queue, shardId), messageList);
-
 
                 // TODO: selector does not read channels correctly.
                 // send to store processor.

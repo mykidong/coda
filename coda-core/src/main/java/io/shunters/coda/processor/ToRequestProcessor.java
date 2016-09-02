@@ -34,7 +34,7 @@ public class ToRequestProcessor extends AbstractQueueThread {
 
     public ToRequestProcessor()
     {
-        addOffsetProcessor = new AddOffsetProcessor(OffsetManager.singleton());
+        addOffsetProcessor = new AddOffsetProcessor();
         addOffsetProcessor.start();
     }
 
@@ -77,6 +77,8 @@ public class ToRequestProcessor extends AbstractQueueThread {
         {
             // TODO:
         }
+
+        buffer.clear();
 
 
         if(responseBuffer != null) {

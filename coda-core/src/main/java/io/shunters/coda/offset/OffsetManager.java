@@ -1,5 +1,7 @@
 package io.shunters.coda.offset;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -12,7 +14,7 @@ public class OffsetManager implements OffsetHandler{
 
     private final static Object lock = new Object();
 
-    private ConcurrentMap<QueueShard, Long> queueShardOffsetMap;
+    private Map<QueueShard, Long> queueShardOffsetMap;
 
     public static OffsetManager singleton()
     {
@@ -32,27 +34,32 @@ public class OffsetManager implements OffsetHandler{
 
     private OffsetManager()
     {
-        this.queueShardOffsetMap = new ConcurrentHashMap<>();
+        this.queueShardOffsetMap = new HashMap<>();
+
+        loadOffset();
     }
 
 
     @Override
-    public long getCurrentOffset(QueueShard queueShard) {
-        synchronized (queueShardOffsetMap)
+    public long getCurrentOffsetAndIncrease(QueueShard queueShard, long size) {
+        synchronized (lock)
         {
+            long currentOffset = 0;
             if(this.queueShardOffsetMap.containsKey(queueShard))
             {
-                return this.queueShardOffsetMap.get(queueShard);
+                currentOffset = this.queueShardOffsetMap.get(queueShard);
             }
-            else {
-                return 0;
-            }
+
+            long newOffset = currentOffset + size;
+            this.queueShardOffsetMap.put(queueShard, newOffset);
+
+            return currentOffset;
         }
     }
 
     @Override
     public void updateOffset(QueueShard queueShard, long offset) {
-        synchronized (queueShardOffsetMap)
+        synchronized (lock)
         {
             this.queueShardOffsetMap.put(queueShard, offset);
         }

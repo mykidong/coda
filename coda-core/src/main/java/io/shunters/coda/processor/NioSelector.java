@@ -54,6 +54,7 @@ public class NioSelector {
         }
     }
 
+
     public void attach(String channelId, int interestOps, Object attachment)
     {
         SocketChannel socketChannel = this.channelMap.get(channelId);
