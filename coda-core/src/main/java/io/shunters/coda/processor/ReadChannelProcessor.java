@@ -104,6 +104,12 @@ public class ReadChannelProcessor extends Thread {
 
         // total size.
         int totalSize = totalSizeBuffer.getInt();
+        if(totalSize < 2)
+        {
+            log.info("total size [{}] too low...", totalSize);
+
+            return;
+        }
 
         // subsequent bytes buffer.
         ByteBuffer buffer = ByteBuffer.allocate(totalSize);
