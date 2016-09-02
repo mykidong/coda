@@ -89,7 +89,16 @@ public class ReadChannelProcessor extends Thread {
 
         // to get total size.
         ByteBuffer totalSizeBuffer = ByteBuffer.allocate(4);
-        socketChannel.read(totalSizeBuffer);
+        int readBytes = socketChannel.read(totalSizeBuffer);
+        if(readBytes <= 0)
+        {
+            log.info("read bytes [{}] from channel...", readBytes);
+
+            //socketChannel.close();
+            //key.cancel();
+
+            return;
+        }
 
         totalSizeBuffer.rewind();
 
@@ -98,7 +107,17 @@ public class ReadChannelProcessor extends Thread {
 
         // subsequent bytes buffer.
         ByteBuffer buffer = ByteBuffer.allocate(totalSize);
-        socketChannel.read(buffer);
+
+        readBytes = socketChannel.read(buffer);
+        if(readBytes <= 0)
+        {
+            log.info("read bytes [{}] from channel...", readBytes);
+
+            //socketChannel.close();
+            //key.cancel();
+
+            return;
+        }
 
 
         buffer.rewind();
