@@ -1,15 +1,10 @@
 package io.shunters.coda.processor;
 
-import com.codahale.metrics.MetricRegistry;
 import io.shunters.coda.command.PutResponse;
 import io.shunters.coda.message.BaseResponseHeader;
-import io.shunters.coda.message.MessageList;
-import io.shunters.coda.metrics.MetricRegistryFactory;
-import io.shunters.coda.offset.QueueShard;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.SelectionKey;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -19,11 +14,8 @@ import java.util.List;
  */
 public class StoreProcessor extends AbstractQueueThread<StoreEvent>{
 
-    private MetricRegistry metricRegistry;
-
     public StoreProcessor()
     {
-        metricRegistry = MetricRegistryFactory.getInstance();
     }
 
 
@@ -32,37 +24,25 @@ public class StoreProcessor extends AbstractQueueThread<StoreEvent>{
     {
         // TODO: sort StoreEvent by shard of the queue.
 
-        QueueShard queueShard = storeEvent.getQueueShard();
-        MessageList messageList = storeEvent.getMessageList();
+        BaseEvent baseEvent = storeEvent.getBaseEvent();
+        int messageId = storeEvent.getMessageId();
+        List<StoreEvent.QueueShardMessageList> queueShardMessageLists = storeEvent.getQueueShardMessageLists();
 
         // TODO: Save MessageList to Memstore for the shard of the queue.
 
-        BaseEvent baseEvent = storeEvent.getBaseEvent();
-
-        // IT IS JUST TEST PURPOSE.
-        sendResponse(baseEvent);
-    }
-
-    private void sendResponse(BaseEvent baseEvent) {
         // IT IS JUST TEST PURPOSE.
         PutResponse putResponse = buildPutResponse();
 
         ByteBuffer responseBuffer = putResponse.write();
-        responseBuffer.rewind();
 
-        SocketChannel socketChannel = baseEvent.getNioSelector().getSocketChannel(baseEvent.getChannelId());
-        try {
-            while (responseBuffer.hasRemaining()) {
-                socketChannel.write(responseBuffer);
-            }
+        String channelId = baseEvent.getChannelId();
+        NioSelector nioSelector = baseEvent.getNioSelector();
 
-            responseBuffer.clear();
+        // attache response to channel with SelectionKey.OP_WRITE, which causes channel processor to send response to the client.
+        nioSelector.attach(channelId, SelectionKey.OP_WRITE, responseBuffer);
 
-            this.metricRegistry.meter("StoreProcessor.write").mark();
-        }catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+        // wakeup must be called.
+        nioSelector.wakeup();
     }
 
     public static BaseResponseHeader buildInstance()

@@ -4,7 +4,7 @@ import com.codahale.metrics.MetricRegistry;
 import io.shunters.coda.metrics.MetricRegistryFactory;
 import io.shunters.coda.metrics.MetricsReporter;
 import io.shunters.coda.metrics.SystemOutMetricsReporter;
-import io.shunters.coda.processor.ReadChannelProcessor;
+import io.shunters.coda.processor.ChannelProcessor;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,7 @@ public class CodaServer implements Runnable{
 
     private MetricsReporter metricsReporter;
 
-    private List<ReadChannelProcessor> readChannelProcessors;
+    private List<ChannelProcessor> channelProcessors;
 
     private int channelProcessorSize;
 
@@ -59,21 +59,21 @@ public class CodaServer implements Runnable{
         metricsReporter = new SystemOutMetricsReporter(metricRegistry);
         metricsReporter.start();
 
-        readChannelProcessors = new ArrayList<>();
+        channelProcessors = new ArrayList<>();
         for(int i = 0; i < channelProcessorSize; i++)
         {
-            ReadChannelProcessor readChannelProcessor = new ReadChannelProcessor(this.metricRegistry);
-            readChannelProcessor.start();
+            ChannelProcessor channelProcessor = new ChannelProcessor(this.metricRegistry);
+            channelProcessor.start();
 
-            readChannelProcessors.add(readChannelProcessor);
+            channelProcessors.add(channelProcessor);
         }
     }
 
-    private ReadChannelProcessor getNextReadChannelProcessor()
+    private ChannelProcessor getNextChannelProcessor()
     {
         int randomIndex = random.nextInt(this.channelProcessorSize);
 
-        return this.readChannelProcessors.get(randomIndex);
+        return this.channelProcessors.get(randomIndex);
     }
 
 
@@ -131,6 +131,6 @@ public class CodaServer implements Runnable{
         log.info("socket channel accepted: [{}]", socketChannel.socket().getRemoteSocketAddress());
 
         // put socket channel to read channel processor.
-        this.getNextReadChannelProcessor().put(socketChannel);
+        this.getNextChannelProcessor().put(socketChannel);
     }
 }

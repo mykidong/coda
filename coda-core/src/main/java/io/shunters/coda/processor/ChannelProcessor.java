@@ -14,9 +14,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 
-public class ReadChannelProcessor extends Thread {
+public class ChannelProcessor extends Thread {
 
-    private static Logger log = LoggerFactory.getLogger(ReadChannelProcessor.class);
+    private static Logger log = LoggerFactory.getLogger(ChannelProcessor.class);
 
     private BlockingQueue<SocketChannel> queue;
 
@@ -26,7 +26,7 @@ public class ReadChannelProcessor extends Thread {
 
     private ToRequestProcessor toRequestProcessor;
 
-    public ReadChannelProcessor(MetricRegistry metricRegistry) {
+    public ChannelProcessor(MetricRegistry metricRegistry) {
         this.metricRegistry = metricRegistry;
 
         this.queue = new LinkedBlockingQueue<>();
@@ -53,7 +53,6 @@ public class ReadChannelProcessor extends Thread {
                 // if new connection is added, register it to selector.
                 if (socketChannel != null) {
                     String channelId = NioSelector.makeChannelId(socketChannel);
-
                     nioSelector.register(channelId, socketChannel, SelectionKey.OP_READ);
                 }
 
@@ -72,6 +71,10 @@ public class ReadChannelProcessor extends Thread {
                     if (key.isReadable()) {
                         this.request(key);
                     }
+                    else if(key.isWritable())
+                    {
+                        this.response(key);
+                    }
                 }
             }
         } catch (IOException e) {
@@ -89,41 +92,16 @@ public class ReadChannelProcessor extends Thread {
 
         // to get total size.
         ByteBuffer totalSizeBuffer = ByteBuffer.allocate(4);
-        int readBytes = socketChannel.read(totalSizeBuffer);
-        if(readBytes <= 0)
-        {
-            log.info("read bytes [{}] from channel...", readBytes);
-            socketChannel.close();
-            key.cancel();
-
-            return;
-        }
+        socketChannel.read(totalSizeBuffer);
 
         totalSizeBuffer.rewind();
 
         // total size.
         int totalSize = totalSizeBuffer.getInt();
-        if(totalSize < 2)
-        {
-            log.info("total size [{}] too low...", totalSize);
-            socketChannel.close();
-            key.cancel();
-
-            return;
-        }
 
         // subsequent bytes buffer.
         ByteBuffer buffer = ByteBuffer.allocate(totalSize);
-
-        readBytes = socketChannel.read(buffer);
-        if(readBytes <= 0)
-        {
-            log.info("read bytes [{}] from channel...", readBytes);
-            socketChannel.close();
-            key.cancel();
-
-            return;
-        }
+        socketChannel.read(buffer);
 
 
         buffer.rewind();
@@ -138,6 +116,29 @@ public class ReadChannelProcessor extends Thread {
         // send to ToRequestProcessor.
         this.toRequestProcessor.put(requestByteBuffer);
 
-        this.metricRegistry.meter("ReadChannelProcessor.read").mark();
+        this.metricRegistry.meter("ChannelProcessor.read").mark();
+    }
+
+    private void response(SelectionKey key) throws IOException {
+        SocketChannel socketChannel = (SocketChannel) key.channel();
+
+        ByteBuffer buffer = (ByteBuffer) key.attachment();
+
+        if(buffer == null)
+        {
+            return;
+        }
+
+        buffer.rewind();
+
+        while (buffer.hasRemaining()) {
+            socketChannel.write(buffer);
+        }
+
+        buffer.clear();
+
+        this.nioSelector.interestOps(socketChannel, SelectionKey.OP_READ);
+
+        this.metricRegistry.meter("ChannelProcessor.write").mark();
     }
 }

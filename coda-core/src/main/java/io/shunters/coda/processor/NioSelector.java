@@ -41,11 +41,6 @@ public class NioSelector {
         }
     }
 
-    public SocketChannel getSocketChannel(String channelId)
-    {
-        return this.channelMap.get(channelId);
-    }
-
 
     public void register(String channelId, SocketChannel socketChannel, int interestOps)
     {
