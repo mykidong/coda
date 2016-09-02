@@ -107,7 +107,6 @@ public class AddOffsetProcessor extends AbstractQueueThread {
         }
 
 
-
         // IT IS JUST TEST PURPOSE.
         PutResponse putResponse = buildPutResponse();
 
