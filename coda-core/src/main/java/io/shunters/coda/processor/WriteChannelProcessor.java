@@ -44,7 +44,7 @@ public class WriteChannelProcessor extends Thread {
 
         try {
             while (true) {
-                SocketChannel socketChannel = this.queue.poll(500, TimeUnit.MILLISECONDS);
+                SocketChannel socketChannel = this.queue.poll();
 
                 // if new connection is added, register it to selector.
                 if (socketChannel != null) {
@@ -70,8 +70,6 @@ public class WriteChannelProcessor extends Thread {
                     }
                 }
             }
-        }catch (InterruptedException e) {
-            throw new RuntimeException(e);
         }
         catch (IOException e) {
             throw new RuntimeException(e);

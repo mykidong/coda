@@ -53,7 +53,7 @@ public class ChannelProcessor extends Thread {
 
         try {
             while (true) {
-                SocketChannel socketChannel = this.queue.poll(500, TimeUnit.MILLISECONDS);
+                SocketChannel socketChannel = this.queue.poll();
 
                 // if new connection is added, register it to selector.
                 if (socketChannel != null) {
@@ -78,8 +78,6 @@ public class ChannelProcessor extends Thread {
                     }
                 }
             }
-        }catch (InterruptedException e) {
-            throw new RuntimeException(e);
         }catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -116,7 +114,6 @@ public class ChannelProcessor extends Thread {
 
         NioSelector writeNioSelector = this.writeChannelProcessor.getNioSelector();
         RequestByteBuffer requestByteBuffer = new RequestByteBuffer(writeNioSelector, channelId, commandId, buffer);
-
 
         // send to ToRequestProcessor.
         this.toRequestProcessor.put(requestByteBuffer);
