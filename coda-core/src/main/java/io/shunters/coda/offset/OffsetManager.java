@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by mykidong on 2016-09-01.
@@ -14,7 +15,7 @@ public class OffsetManager implements OffsetHandler{
 
     private final static Object lock = new Object();
 
-    private Map<QueueShard, Long> queueShardOffsetMap;
+    private ConcurrentMap<QueueShard, AtomicLong> queueShardOffsetMap;
 
     public static OffsetManager singleton()
     {
@@ -34,7 +35,7 @@ public class OffsetManager implements OffsetHandler{
 
     private OffsetManager()
     {
-        this.queueShardOffsetMap = new HashMap<>();
+        this.queueShardOffsetMap = new ConcurrentHashMap<>();
 
         loadOffset();
     }
@@ -42,27 +43,21 @@ public class OffsetManager implements OffsetHandler{
 
     @Override
     public long getCurrentOffsetAndIncrease(QueueShard queueShard, long size) {
-        synchronized (lock)
+        long currentOffset = 0;
+        if(this.queueShardOffsetMap.containsKey(queueShard))
         {
-            long currentOffset = 0;
-            if(this.queueShardOffsetMap.containsKey(queueShard))
-            {
-                currentOffset = this.queueShardOffsetMap.get(queueShard);
-            }
-
-            long newOffset = currentOffset + size;
-            this.queueShardOffsetMap.put(queueShard, newOffset);
-
-            return currentOffset;
+            currentOffset = this.queueShardOffsetMap.get(queueShard).getAndAdd(size);
         }
+        else {
+            this.queueShardOffsetMap.put(queueShard, new AtomicLong(size));
+        }
+
+        return currentOffset;
     }
 
     @Override
     public void updateOffset(QueueShard queueShard, long offset) {
-        synchronized (lock)
-        {
-            this.queueShardOffsetMap.put(queueShard, offset);
-        }
+        this.queueShardOffsetMap.put(queueShard, new AtomicLong(offset));
     }
 
     @Override
