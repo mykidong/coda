@@ -26,11 +26,8 @@ public class ReadChannelProcessor extends Thread {
 
     private ToRequestProcessor toRequestProcessor;
 
-    private WriteChannelProcessor writeChannelProcessor;
-
-    public ReadChannelProcessor(MetricRegistry metricRegistry, WriteChannelProcessor writeChannelProcessor) {
+    public ReadChannelProcessor(MetricRegistry metricRegistry) {
         this.metricRegistry = metricRegistry;
-        this.writeChannelProcessor = writeChannelProcessor;
 
         this.queue = new LinkedBlockingQueue<>();
 
@@ -43,8 +40,6 @@ public class ReadChannelProcessor extends Thread {
     public void put(SocketChannel socketChannel) {
         this.queue.add(socketChannel);
         this.nioSelector.wakeup();
-
-        writeChannelProcessor.put(socketChannel);
     }
 
 
@@ -58,7 +53,6 @@ public class ReadChannelProcessor extends Thread {
                 // if new connection is added, register it to selector.
                 if (socketChannel != null) {
                     String channelId = NioSelector.makeChannelId(socketChannel);
-                    log.info("channelId [{}] registered for read...", channelId);
 
                     nioSelector.register(channelId, socketChannel, SelectionKey.OP_READ);
                 }
@@ -114,9 +108,7 @@ public class ReadChannelProcessor extends Thread {
 
         buffer.rewind();
 
-        // write channel nio selector.
-        NioSelector writeNioSelector = this.writeChannelProcessor.getNioSelector();
-        RequestByteBuffer requestByteBuffer = new RequestByteBuffer(writeNioSelector, channelId, commandId, buffer);
+        RequestByteBuffer requestByteBuffer = new RequestByteBuffer(this.nioSelector, channelId, commandId, buffer);
 
         // send to ToRequestProcessor.
         this.toRequestProcessor.put(requestByteBuffer);

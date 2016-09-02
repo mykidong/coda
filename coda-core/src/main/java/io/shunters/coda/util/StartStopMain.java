@@ -42,7 +42,7 @@ public class StartStopMain {
 
 	public static void start(String conf) throws Exception
 	{
-		CodaServer server = new CodaServer(9911, 10);
+		CodaServer server = new CodaServer(9911, 50);
 
 		t = new Thread(server);
 		t.start();
