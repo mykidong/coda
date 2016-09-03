@@ -36,7 +36,8 @@ public class ToRequestProcessor extends AbstractQueueThread<RequestByteBuffer> {
     {
         SetOffsetProcessor setOffsetProcessor = new SetOffsetProcessor();
         setOffsetProcessor.start();
-        setOffsetDisruptor = DisruptorBuilder.singleton("SetOffset", SetOffsetEvent.FACTORY, 1024, setOffsetProcessor);
+
+        this.setOffsetDisruptor = DisruptorBuilder.singleton("SetOffset", SetOffsetEvent.FACTORY, 1024, setOffsetProcessor);
         this.setOffsetEventTranslator = new SetOffsetEventTranslator();
     }
 
