@@ -1,29 +1,27 @@
 package io.shunters.coda.processor;
 
-import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.command.PutResponse;
 import io.shunters.coda.message.BaseResponseHeader;
 import io.shunters.coda.offset.QueueShard;
-import io.shunters.coda.util.DisruptorBuilder;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by mykidong on 2016-09-01.
  */
 public class AddMessageListProcessor extends AbstractQueueThread<AddMessageListEvent>{
 
-    private Disruptor<SortMessageListEvent> sortMessageListDisruptor;
-    private SortMessageListEventTranslator sortMessageListEventTranslator;
+    private StoreProcessor storeProcessor;
 
     public AddMessageListProcessor()
     {
-        SortMessageListProcessor sortMessageListProcessor = new SortMessageListProcessor();
-        sortMessageListProcessor.start();
-        sortMessageListDisruptor = DisruptorBuilder.singleton("SortMessageList", SortMessageListEvent.FACTORY, 1024, sortMessageListProcessor);
-        this.sortMessageListEventTranslator = new SortMessageListEventTranslator();
+        storeProcessor = new StoreProcessor();
+        storeProcessor.start();
     }
 
 
@@ -34,9 +32,8 @@ public class AddMessageListProcessor extends AbstractQueueThread<AddMessageListE
         int messageId = storeEvent.getMessageId();
         List<AddMessageListEvent.QueueShardMessageList> queueShardMessageLists = storeEvent.getQueueShardMessageLists();
 
-        // put MessageList to SortMessageListProcessor for the shard of the queue.
-        this.sortMessageListEventTranslator.setQueueShardMessageLists(queueShardMessageLists);
-        this.sortMessageListDisruptor.publishEvent(this.sortMessageListEventTranslator);
+        // send to StoreProcessor.
+        this.storeProcessor.put(new StoreEvent(queueShardMessageLists));
 
         // prepare response.
         BaseResponseHeader baseResponseHeader = new BaseResponseHeader(messageId);

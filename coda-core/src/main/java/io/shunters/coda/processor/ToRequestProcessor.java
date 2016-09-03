@@ -1,12 +1,11 @@
 package io.shunters.coda.processor;
 
+import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.command.PutRequest;
 import io.shunters.coda.command.RequestByteBuffer;
-import io.shunters.coda.offset.OffsetManager;
+import io.shunters.coda.util.DisruptorBuilder;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by mykidong on 2016-09-01.
@@ -30,12 +29,15 @@ public class ToRequestProcessor extends AbstractQueueThread<RequestByteBuffer> {
     public static final short DESCRIBE_GROUPS_REQUEST = 305;
     public static final short LIST_GROUPS_REQUEST = 306;
 
-    private AddOffsetProcessor addOffsetProcessor;
+    private Disruptor<SetOffsetEvent> setOffsetDisruptor;
+    private SetOffsetEventTranslator setOffsetEventTranslator;
 
     public ToRequestProcessor()
     {
-        addOffsetProcessor = new AddOffsetProcessor();
-        addOffsetProcessor.start();
+        SetOffsetProcessor setOffsetProcessor = new SetOffsetProcessor();
+        setOffsetProcessor.start();
+        setOffsetDisruptor = DisruptorBuilder.singleton("SetOffset", SetOffsetEvent.FACTORY, 1024, setOffsetProcessor);
+        this.setOffsetEventTranslator = new SetOffsetEventTranslator();
     }
 
 
@@ -47,29 +49,19 @@ public class ToRequestProcessor extends AbstractQueueThread<RequestByteBuffer> {
         ByteBuffer buffer = requestByteBuffer.getBuffer();
         NioSelector nioSelector = requestByteBuffer.getNioSelector();
 
-        ByteBuffer responseBuffer = null;
-
         if(commandId == PUT_REQUEST)
         {
             PutRequest putRequest = PutRequest.fromByteBuffer(buffer);
 
-            AddOffsetEvent addOffsetEvent = new AddOffsetEvent(new BaseEvent(channelId, nioSelector), putRequest);
-
-            addOffsetProcessor.put(addOffsetEvent);
+            // send to SetOffsetProcessor.
+            this.setOffsetEventTranslator.setBaseEvent(new BaseEvent(channelId, nioSelector));
+            this.setOffsetEventTranslator.setPutRequest(putRequest);
+            this.setOffsetDisruptor.publishEvent(this.setOffsetEventTranslator);
         }
         // TODO: add another commands.
         else
         {
             // TODO:
-        }
-
-        buffer.clear();
-
-
-        if(responseBuffer != null) {
-            // attache response to channel with SelectionKey.OP_WRITE, which causes channel processor to send response to the client.
-            nioSelector.attach(channelId, SelectionKey.OP_WRITE, responseBuffer);
-            nioSelector.wakeup();
         }
     }
 }
