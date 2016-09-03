@@ -36,4 +36,13 @@ public class QueueShard {
 
         return (this.queue.equals(queueShard.getQueue())) && (this.shardId == queueShard.getShardId());
     }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("queue: ").append(queue).append(", ").append("shard: ").append(shardId);
+
+        return sb.toString();
+    }
 }

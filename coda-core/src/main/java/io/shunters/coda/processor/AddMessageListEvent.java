@@ -25,6 +25,7 @@ public class AddMessageListEvent {
     public BaseEvent getBaseEvent() {
         return baseEvent;
     }
+
     public int getMessageId() {
         return messageId;
     }
@@ -36,11 +37,13 @@ public class AddMessageListEvent {
     public static class  QueueShardMessageList
     {
         private QueueShard queueShard;
+        private long firstOffset;
         private MessageList messageList;
 
-        public QueueShardMessageList(QueueShard queueShard, MessageList messageList)
+        public QueueShardMessageList(QueueShard queueShard, long firstOffset, MessageList messageList)
         {
             this.queueShard = queueShard;
+            this.firstOffset = firstOffset;
             this.messageList = messageList;
         }
 
@@ -48,8 +51,24 @@ public class AddMessageListEvent {
             return queueShard;
         }
 
+        public void setQueueShard(QueueShard queueShard) {
+            this.queueShard = queueShard;
+        }
+
+        public long getFirstOffset() {
+            return firstOffset;
+        }
+
+        public void setFirstOffset(long firstOffset) {
+            this.firstOffset = firstOffset;
+        }
+
         public MessageList getMessageList() {
             return messageList;
+        }
+
+        public void setMessageList(MessageList messageList) {
+            this.messageList = messageList;
         }
     }
 }

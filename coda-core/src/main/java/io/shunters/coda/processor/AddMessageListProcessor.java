@@ -53,28 +53,22 @@ public class AddMessageListProcessor extends AbstractQueueThread<AddMessageListE
 
             short shardErrorCode = 0;
 
-            List<MessageOffset> messageOffsets = queueShardMessageList.getMessageList().getMessageOffsets();
-            for(MessageOffset messageOffset : messageOffsets)
+            long firstOffset = queueShardMessageList.getFirstOffset();
+
+            // TODO: set timestamp with respect to timestampType.
+            long timestamp = -1;
+
+            PutResponse.QueuePutResult.ShardPutResult shardPutResult = new PutResponse.QueuePutResult.ShardPutResult(shardId, shardErrorCode, firstOffset, timestamp);
+
+            if(queueShardPutResultMap.containsKey(queue))
             {
-                long offset = messageOffset.getOffset();
-
-                // TODO: set timestamp with respect to timestampType.
-                long timestamp = -1;
-
-                PutResponse.QueuePutResult.ShardPutResult shardPutResult = new PutResponse.QueuePutResult.ShardPutResult(shardId, shardErrorCode, offset, timestamp);
-
-                if(queueShardPutResultMap.containsKey(queue))
-                {
-                    queueShardPutResultMap.get(queue).add(shardPutResult);
-                }
-                else
-                {
-                    List<PutResponse.QueuePutResult.ShardPutResult> shardPutResults = new ArrayList<>();
-                    shardPutResults.add(shardPutResult);
-                    queueShardPutResultMap.put(queue, shardPutResults);
-                }
-
-                break;
+                queueShardPutResultMap.get(queue).add(shardPutResult);
+            }
+            else
+            {
+                List<PutResponse.QueuePutResult.ShardPutResult> shardPutResults = new ArrayList<>();
+                shardPutResults.add(shardPutResult);
+                queueShardPutResultMap.put(queue, shardPutResults);
             }
         }
 

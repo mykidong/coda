@@ -63,6 +63,9 @@ public class AddOffsetProcessor extends AbstractQueueThread<AddOffsetEvent> {
                 // TODO: getting current offset is a bottleneck cause.
                 // get current offset for the shard of the queue.
                 long currentOffset = offsetHandler.getCurrentOffsetAndIncrease(queueShard, messageOffsetList.size());
+
+                // firstOffset for this MessageList.
+                long firstOffset = currentOffset + 1;
                 for(MessageOffset messageOffset : messageOffsetList)
                 {
                     // increase offset.
@@ -84,7 +87,7 @@ public class AddOffsetProcessor extends AbstractQueueThread<AddOffsetEvent> {
 
 
                 // construct QueueShardMessageList of AddMessageListEvent.
-                AddMessageListEvent.QueueShardMessageList queueShardMessageList = new AddMessageListEvent.QueueShardMessageList(new QueueShard(queue, shardId), messageList);
+                AddMessageListEvent.QueueShardMessageList queueShardMessageList = new AddMessageListEvent.QueueShardMessageList(new QueueShard(queue, shardId), firstOffset, messageList);
                 queueShardMessageLists.add(queueShardMessageList);
             }
         }
