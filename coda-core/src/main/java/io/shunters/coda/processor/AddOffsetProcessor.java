@@ -1,16 +1,15 @@
 package io.shunters.coda.processor;
 
 import io.shunters.coda.command.PutRequest;
-import io.shunters.coda.command.PutResponse;
-import io.shunters.coda.message.*;
+import io.shunters.coda.message.BaseRequestHeader;
+import io.shunters.coda.message.Message;
+import io.shunters.coda.message.MessageList;
+import io.shunters.coda.message.MessageOffset;
 import io.shunters.coda.offset.OffsetHandler;
 import io.shunters.coda.offset.OffsetManager;
 import io.shunters.coda.offset.QueueShard;
 
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -18,14 +17,14 @@ import java.util.List;
  */
 public class AddOffsetProcessor extends AbstractQueueThread<AddOffsetEvent> {
 
-    private StoreProcessor storeProcessor;
+    private AddMessageListProcessor addMessageListProcessor;
 
     private OffsetHandler offsetHandler;
 
     public AddOffsetProcessor()
     {
-        this.storeProcessor = new StoreProcessor();
-        this.storeProcessor.start();
+        this.addMessageListProcessor = new AddMessageListProcessor();
+        this.addMessageListProcessor.start();
 
         offsetHandler = OffsetManager.singleton();
     }
@@ -44,7 +43,7 @@ public class AddOffsetProcessor extends AbstractQueueThread<AddOffsetEvent> {
 
         int messageId = baseRequestHeader.getMessageId();
 
-        List<StoreEvent.QueueShardMessageList> queueShardMessageLists = new ArrayList<>();
+        List<AddMessageListEvent.QueueShardMessageList> queueShardMessageLists = new ArrayList<>();
 
         List<PutRequest.QueueMessageWrap> queueMessageWrapList = putRequest.getQueueMessageWraps();
         for(PutRequest.QueueMessageWrap queueMessageWrap : queueMessageWrapList)
@@ -84,15 +83,14 @@ public class AddOffsetProcessor extends AbstractQueueThread<AddOffsetEvent> {
                 }
 
 
-                // construct QueueShardMessageList of StoreEvent.
-                StoreEvent.QueueShardMessageList queueShardMessageList = new StoreEvent.QueueShardMessageList(new QueueShard(queue, shardId), messageList);
+                // construct QueueShardMessageList of AddMessageListEvent.
+                AddMessageListEvent.QueueShardMessageList queueShardMessageList = new AddMessageListEvent.QueueShardMessageList(new QueueShard(queue, shardId), messageList);
                 queueShardMessageLists.add(queueShardMessageList);
             }
         }
 
-        // TODO: selector does not read channels correctly.
-        // send to store processor.
-        StoreEvent storeEvent = new StoreEvent(baseEvent, messageId, queueShardMessageLists);
-        this.storeProcessor.put(storeEvent);
+        // send to AddMessageList processor.
+        AddMessageListEvent storeEvent = new AddMessageListEvent(baseEvent, messageId, queueShardMessageLists);
+        this.addMessageListProcessor.put(storeEvent);
     }
 }

@@ -9,13 +9,13 @@ import java.util.List;
 /**
  * Created by mykidong on 2016-09-01.
  */
-public class StoreEvent {
+public class AddMessageListEvent {
 
     private BaseEvent baseEvent;
     private int messageId;
     private List<QueueShardMessageList> queueShardMessageLists;
 
-    public StoreEvent(BaseEvent baseEvent, int messageId, List<QueueShardMessageList> queueShardMessageLists)
+    public AddMessageListEvent(BaseEvent baseEvent, int messageId, List<QueueShardMessageList> queueShardMessageLists)
     {
         this.baseEvent = baseEvent;
         this.messageId = messageId;

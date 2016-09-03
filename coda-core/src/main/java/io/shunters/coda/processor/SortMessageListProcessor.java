@@ -8,20 +8,19 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
  * Created by mykidong on 2016-09-03.
  */
-public class MemStoreProcessor extends AbstractQueueThread<MemStoreEvent> implements EventHandler<MemStoreEvent> {
+public class SortMessageListProcessor extends AbstractQueueThread<SortMessageListEvent> implements EventHandler<SortMessageListEvent> {
 
-    private static Logger log = LoggerFactory.getLogger(MemStoreProcessor.class);
+    private static Logger log = LoggerFactory.getLogger(SortMessageListProcessor.class);
 
     private ConcurrentMap<QueueShard, List<MessageList>> messageListMap;
 
-    public MemStoreProcessor()
+    public SortMessageListProcessor()
     {
         this.messageListMap = new ConcurrentHashMap<>();
     }
@@ -29,17 +28,16 @@ public class MemStoreProcessor extends AbstractQueueThread<MemStoreEvent> implem
 
 
     @Override
-    public void onEvent(MemStoreEvent memStoreEvent, long l, boolean b) throws Exception {
-        this.put(memStoreEvent);
+    public void onEvent(SortMessageListEvent memStoreEvent, long l, boolean b) throws Exception {
+        this.process(memStoreEvent);
     }
 
-    @Override
-    public void process(MemStoreEvent event) {
+    public void process(SortMessageListEvent event) {
 
         // TODO:
 
-        List<StoreEvent.QueueShardMessageList> queueShardMessageLists = event.getQueueShardMessageLists();
-        for(StoreEvent.QueueShardMessageList queueShardMessageList : queueShardMessageLists)
+        List<AddMessageListEvent.QueueShardMessageList> queueShardMessageLists = event.getQueueShardMessageLists();
+        for(AddMessageListEvent.QueueShardMessageList queueShardMessageList : queueShardMessageLists)
         {
             QueueShard queueShard = queueShardMessageList.getQueueShard();
 
