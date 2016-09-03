@@ -1,7 +1,9 @@
 package io.shunters.coda.processor;
 
 import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.offset.QueueShard;
+import io.shunters.coda.util.DisruptorBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,11 +22,19 @@ public class SortMessageListProcessor extends AbstractQueueThread<SortMessageLis
 
     private final Object lock = new Object();
 
+    private Disruptor<StoreEvent> storeDisruptor;
+    private StoreEventTranslator storeEventTranslator;
+
     public SortMessageListProcessor()
     {
         this.messageListMap = new ConcurrentHashMap<>();
 
-        // TODO: set period.
+        StoreProcessor storeProcessor = new StoreProcessor();
+        storeProcessor.start();
+        this.storeDisruptor = DisruptorBuilder.singleton("Store", StoreEvent.FACTORY, 1024, storeProcessor);
+        this.storeEventTranslator = new StoreEventTranslator();
+
+        // TODO: set period by configuration.
         CustomTimer customTimer = new CustomTimer(this, 500);
         customTimer.runTimer();
     }
@@ -72,8 +82,10 @@ public class SortMessageListProcessor extends AbstractQueueThread<SortMessageLis
                     }
                 });
 
-
-                // TODO: send to StoreProcessor.
+                // send to StoreProcessor.
+                this.storeEventTranslator.setQueueShard(queueShard);
+                this.storeEventTranslator.setQueueShardMessageLists(messageList);
+                this.storeDisruptor.publishEvent(this.storeEventTranslator);
             }
         }
     }

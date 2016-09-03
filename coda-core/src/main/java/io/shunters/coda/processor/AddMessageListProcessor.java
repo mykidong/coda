@@ -3,7 +3,6 @@ package io.shunters.coda.processor;
 import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.command.PutResponse;
 import io.shunters.coda.message.BaseResponseHeader;
-import io.shunters.coda.message.MessageOffset;
 import io.shunters.coda.offset.QueueShard;
 import io.shunters.coda.util.DisruptorBuilder;
 
@@ -17,14 +16,14 @@ import java.util.*;
 public class AddMessageListProcessor extends AbstractQueueThread<AddMessageListEvent>{
 
     private Disruptor<SortMessageListEvent> sortMessageListDisruptor;
-    private SortMessageListTranslator sortMessageListTranslator;
+    private SortMessageListEventTranslator sortMessageListEventTranslator;
 
     public AddMessageListProcessor()
     {
         SortMessageListProcessor sortMessageListProcessor = new SortMessageListProcessor();
         sortMessageListProcessor.start();
         sortMessageListDisruptor = DisruptorBuilder.singleton("SortMessageList", SortMessageListEvent.FACTORY, 1024, sortMessageListProcessor);
-        this.sortMessageListTranslator = new SortMessageListTranslator();
+        this.sortMessageListEventTranslator = new SortMessageListEventTranslator();
     }
 
 
@@ -36,8 +35,8 @@ public class AddMessageListProcessor extends AbstractQueueThread<AddMessageListE
         List<AddMessageListEvent.QueueShardMessageList> queueShardMessageLists = storeEvent.getQueueShardMessageLists();
 
         // put MessageList to SortMessageListProcessor for the shard of the queue.
-        this.sortMessageListTranslator.setQueueShardMessageLists(queueShardMessageLists);
-        this.sortMessageListDisruptor.publishEvent(this.sortMessageListTranslator);
+        this.sortMessageListEventTranslator.setQueueShardMessageLists(queueShardMessageLists);
+        this.sortMessageListDisruptor.publishEvent(this.sortMessageListEventTranslator);
 
         // prepare response.
         BaseResponseHeader baseResponseHeader = new BaseResponseHeader(messageId);

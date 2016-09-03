@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Created by mykidong on 2016-09-03.
  */
-public class SortMessageListTranslator implements EventTranslator<SortMessageListEvent> {
+public class SortMessageListEventTranslator implements EventTranslator<SortMessageListEvent> {
 
     private List<AddMessageListEvent.QueueShardMessageList> queueShardMessageLists;
 
