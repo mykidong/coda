@@ -1,4 +1,4 @@
-package io.shunters.coda.disruptor;
+package io.shunters.coda.util;
 
 import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.EventFactory;
@@ -20,23 +20,16 @@ public class DisruptorBuilder {
     private static Logger log = LoggerFactory.getLogger(DisruptorBuilder.class);
 
     private static ConcurrentMap<String, Disruptor> disruptorMap;
-
     private static final Object lock = new Object();
-
 
     public static <T> Disruptor singleton(String disruptorName, EventFactory<T> factory, int bufferSize, EventHandler<T>... handlers)
     {
         if(disruptorMap == null) {
             synchronized(lock) {
                 if(disruptorMap == null) {
-
                     disruptorMap = new ConcurrentHashMap<>();
-
                     Disruptor disruptor = newInstance(disruptorName, factory, bufferSize, handlers);
-
                     disruptorMap.put(disruptorName, disruptor);
-
-                    log.info("disruptor map is initialized, and new disruptor [" + disruptorName + "] added...");
                 }
             }
         }
@@ -45,13 +38,7 @@ public class DisruptorBuilder {
             synchronized(lock) {
                 if (!disruptorMap.containsKey(disruptorName)) {
                     Disruptor disruptor = newInstance(disruptorName, factory, bufferSize, handlers);
-
                     disruptorMap.put(disruptorName, disruptor);
-
-                    log.info("disruptor [" + disruptorName + "] does not exist, new disruptor put to map...");
-                }
-                else {
-                    log.info("disruptor [{}] called from map...", disruptorName);
                 }
             }
         }
@@ -67,10 +54,7 @@ public class DisruptorBuilder {
                 new BlockingWaitStrategy());
 
         disruptor.handleEventsWith(handlers);
-
         disruptor.start();
-
-        log.info("disruptor [{}] returned...", disruptorName);
 
         return disruptor;
     }

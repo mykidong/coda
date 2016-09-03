@@ -99,7 +99,7 @@ public class OldClientTestSkip {
 
                     PutResponse putResponse = PutResponse.fromByteBuffer(responseBuffer);
 
-                    //System.out.println("response: [" + putResponse.toString() + "]");
+                    System.out.println("response: [" + putResponse.toString() + "]");
 
                     TimeUtils.pause(this.pause);
 

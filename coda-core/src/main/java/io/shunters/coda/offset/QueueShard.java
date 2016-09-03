@@ -22,4 +22,18 @@ public class QueueShard {
     public int getShardId() {
         return shardId;
     }
+
+    @Override
+    public int hashCode()
+    {
+        return queue.hashCode() + this.shardId;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        QueueShard queueShard = (QueueShard) o;
+
+        return (this.queue.equals(queueShard.getQueue())) && (this.shardId == queueShard.getShardId());
+    }
 }

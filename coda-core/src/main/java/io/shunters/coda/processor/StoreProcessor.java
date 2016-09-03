@@ -1,38 +1,92 @@
 package io.shunters.coda.processor;
 
+import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.command.PutResponse;
 import io.shunters.coda.message.BaseResponseHeader;
+import io.shunters.coda.message.MessageOffset;
+import io.shunters.coda.offset.QueueShard;
+import io.shunters.coda.util.DisruptorBuilder;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by mykidong on 2016-09-01.
  */
 public class StoreProcessor extends AbstractQueueThread<StoreEvent>{
 
+    private Disruptor<MemStoreEvent> memStoreDisruptor;
+    private MemStoreTranslator memStoreTranslator;
+
     public StoreProcessor()
     {
+        MemStoreProcessor memStoreProcessor = new MemStoreProcessor();
+        memStoreProcessor.start();
+        memStoreDisruptor = DisruptorBuilder.singleton("MemStore", MemStoreEvent.FACTORY, 1024, memStoreProcessor);
+        this.memStoreTranslator = new MemStoreTranslator();
     }
 
 
     @Override
     public void process(StoreEvent storeEvent)
     {
-        // TODO: sort StoreEvent by shard of the queue.
-
         BaseEvent baseEvent = storeEvent.getBaseEvent();
         int messageId = storeEvent.getMessageId();
         List<StoreEvent.QueueShardMessageList> queueShardMessageLists = storeEvent.getQueueShardMessageLists();
 
-        // TODO: Save MessageList to Memstore for the shard of the queue.
+        // put MessageList to MemStoreProcessor for the shard of the queue.
+        this.memStoreTranslator.setQueueShardMessageLists(queueShardMessageLists);
+        this.memStoreDisruptor.publishEvent(this.memStoreTranslator);
 
-        // IT IS JUST TEST PURPOSE.
-        PutResponse putResponse = buildPutResponse();
+        // prepare response.
+        BaseResponseHeader baseResponseHeader = new BaseResponseHeader(messageId);
 
+        Map<String, List<PutResponse.QueuePutResult.ShardPutResult>> queueShardPutResultMap = new HashMap<>();
+
+        for(StoreEvent.QueueShardMessageList queueShardMessageList : queueShardMessageLists)
+        {
+            QueueShard queueShard = queueShardMessageList.getQueueShard();
+
+            String queue = queueShard.getQueue();
+            int shardId = queueShard.getShardId();
+
+            short shardErrorCode = 0;
+
+            List<MessageOffset> messageOffsets = queueShardMessageList.getMessageList().getMessageOffsets();
+            for(MessageOffset messageOffset : messageOffsets)
+            {
+                long offset = messageOffset.getOffset();
+
+                // TODO: set timestamp with respect to timestampType.
+                long timestamp = -1;
+
+                PutResponse.QueuePutResult.ShardPutResult shardPutResult = new PutResponse.QueuePutResult.ShardPutResult(shardId, shardErrorCode, offset, timestamp);
+
+                if(queueShardPutResultMap.containsKey(queue))
+                {
+                    queueShardPutResultMap.get(queue).add(shardPutResult);
+                }
+                else
+                {
+                    List<PutResponse.QueuePutResult.ShardPutResult> shardPutResults = new ArrayList<>();
+                    shardPutResults.add(shardPutResult);
+                    queueShardPutResultMap.put(queue, shardPutResults);
+                }
+
+                break;
+            }
+        }
+
+        List<PutResponse.QueuePutResult> queuePutResults = new ArrayList<>();
+        for(String queue : queueShardPutResultMap.keySet())
+        {
+            PutResponse.QueuePutResult queuePutResult = new PutResponse.QueuePutResult(queue, queueShardPutResultMap.get(queue));
+            queuePutResults.add(queuePutResult);
+        }
+
+        // build PutResponse.
+        PutResponse putResponse = new PutResponse(baseResponseHeader, queuePutResults);
         ByteBuffer responseBuffer = putResponse.write();
 
         String channelId = baseEvent.getChannelId();
@@ -43,53 +97,5 @@ public class StoreProcessor extends AbstractQueueThread<StoreEvent>{
 
         // wakeup must be called.
         nioSelector.wakeup();
-    }
-
-    public static BaseResponseHeader buildInstance()
-    {
-        int messageId = 234584;
-
-        BaseResponseHeader baseResponseHeader = new BaseResponseHeader(messageId);
-
-        return baseResponseHeader;
-    }
-
-    public static PutResponse.QueuePutResult.ShardPutResult buildShardPutResult()
-    {
-        int shardId = 1;
-        short shardErrorCode = 0;
-        long offset = 33424;
-        long timestamp = new Date().getTime();
-
-        return new PutResponse.QueuePutResult.ShardPutResult(shardId, shardErrorCode, offset, timestamp);
-    }
-
-    public static PutResponse.QueuePutResult buildQueuePutResult()
-    {
-        String queue = "some-queue-name";
-
-        List<PutResponse.QueuePutResult.ShardPutResult> shardPutResults = new ArrayList<>();
-        for(int i = 0; i < 3; i++)
-        {
-            PutResponse.QueuePutResult.ShardPutResult shardPutResult = buildShardPutResult();
-            shardPutResults.add(shardPutResult);
-        }
-
-        return new PutResponse.QueuePutResult(queue, shardPutResults);
-    }
-
-    public static PutResponse buildPutResponse()
-    {
-        BaseResponseHeader baseResponseHeader = buildInstance();
-
-        List<PutResponse.QueuePutResult> queuePutResults = new ArrayList<>();
-
-        for(int i = 0; i < 2; i++)
-        {
-            PutResponse.QueuePutResult queuePutResult = buildQueuePutResult();
-            queuePutResults.add(queuePutResult);
-        }
-
-        return new PutResponse(baseResponseHeader, queuePutResults);
     }
 }

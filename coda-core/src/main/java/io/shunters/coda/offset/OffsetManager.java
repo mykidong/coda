@@ -1,5 +1,9 @@
 package io.shunters.coda.offset;
 
+import io.shunters.coda.processor.ChannelProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,26 +15,28 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class OffsetManager implements OffsetHandler{
 
-    private static OffsetManager offsetManager;
+    private static Logger log = LoggerFactory.getLogger(OffsetManager.class);
+
+    private static OffsetHandler offsetHandler;
 
     private final static Object lock = new Object();
 
     private ConcurrentMap<QueueShard, AtomicLong> queueShardOffsetMap;
 
-    public static OffsetManager singleton()
+    public static OffsetHandler singleton()
     {
-        if(offsetManager == null)
+        if(offsetHandler == null)
         {
             synchronized (lock)
             {
-                if(offsetManager == null)
+                if(offsetHandler == null)
                 {
-                    offsetManager = new OffsetManager();
+                    offsetHandler = new OffsetManager();
                 }
             }
         }
 
-        return offsetManager;
+        return offsetHandler;
     }
 
     private OffsetManager()
