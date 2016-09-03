@@ -1,6 +1,5 @@
 package io.shunters.coda.processor;
 
-import com.lmax.disruptor.EventHandler;
 import io.shunters.coda.command.PutRequest;
 import io.shunters.coda.message.BaseRequestHeader;
 import io.shunters.coda.message.Message;
@@ -14,32 +13,28 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by mykidong on 2016-09-03.
+ * Created by mykidong on 2016-09-01.
  */
-public class SetOffsetProcessor extends AbstractQueueThread<SetOffsetEvent> implements EventHandler<SetOffsetEvent> {
-
-    private OffsetHandler offsetHandler;
+public class AddOffsetProcessor extends AbstractQueueThread<AddOffsetEvent> {
 
     private AddMessageListProcessor addMessageListProcessor;
 
-    public SetOffsetProcessor()
+    private OffsetHandler offsetHandler;
+
+    public AddOffsetProcessor()
     {
-        this.offsetHandler = OffsetManager.singleton();
+        this.addMessageListProcessor = new AddMessageListProcessor();
+        this.addMessageListProcessor.start();
 
-        addMessageListProcessor = new AddMessageListProcessor();
-        addMessageListProcessor.start();
+        offsetHandler = OffsetManager.singleton();
     }
 
 
     @Override
-    public void onEvent(SetOffsetEvent setOffsetEvent, long l, boolean b) throws Exception {
-        this.put(setOffsetEvent);
-    }
-
-    @Override
-    public void process(SetOffsetEvent event) {
-        BaseEvent baseEvent = event.getBaseEvent();
-        PutRequest putRequest = event.getPutRequest();
+    public void process(AddOffsetEvent addOffsetEvent)
+    {
+        BaseEvent baseEvent = addOffsetEvent.getBaseEvent();
+        PutRequest putRequest = addOffsetEvent.getPutRequest();
 
         // TODO: replication  implementation according to the acking mode.
         short acks = putRequest.getAcks();
@@ -97,7 +92,8 @@ public class SetOffsetProcessor extends AbstractQueueThread<SetOffsetEvent> impl
             }
         }
 
-        // send to AddMessageListProcessor.
-        this.addMessageListProcessor.put(new AddMessageListEvent(baseEvent, messageId, queueShardMessageLists));
+        // send to AddMessageList processor.
+        AddMessageListEvent storeEvent = new AddMessageListEvent(baseEvent, messageId, queueShardMessageLists);
+        this.addMessageListProcessor.put(storeEvent);
     }
 }

@@ -1,5 +1,6 @@
 package io.shunters.coda.processor;
 
+import io.shunters.coda.message.Message;
 import io.shunters.coda.message.MessageList;
 import io.shunters.coda.offset.QueueShard;
 

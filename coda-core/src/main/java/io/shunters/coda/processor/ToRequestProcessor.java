@@ -1,11 +1,12 @@
 package io.shunters.coda.processor;
 
-import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.command.PutRequest;
 import io.shunters.coda.command.RequestByteBuffer;
-import io.shunters.coda.util.DisruptorBuilder;
+import io.shunters.coda.offset.OffsetManager;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by mykidong on 2016-09-01.
@@ -29,16 +30,12 @@ public class ToRequestProcessor extends AbstractQueueThread<RequestByteBuffer> {
     public static final short DESCRIBE_GROUPS_REQUEST = 305;
     public static final short LIST_GROUPS_REQUEST = 306;
 
-    private Disruptor<SetOffsetEvent> setOffsetDisruptor;
-    private SetOffsetEventTranslator setOffsetEventTranslator;
+    private AddOffsetProcessor addOffsetProcessor;
 
     public ToRequestProcessor()
     {
-        SetOffsetProcessor setOffsetProcessor = new SetOffsetProcessor();
-        setOffsetProcessor.start();
-
-        this.setOffsetDisruptor = DisruptorBuilder.singleton("SetOffset", SetOffsetEvent.FACTORY, 1024, setOffsetProcessor);
-        this.setOffsetEventTranslator = new SetOffsetEventTranslator();
+        addOffsetProcessor = new AddOffsetProcessor();
+        addOffsetProcessor.start();
     }
 
 
@@ -54,10 +51,9 @@ public class ToRequestProcessor extends AbstractQueueThread<RequestByteBuffer> {
         {
             PutRequest putRequest = PutRequest.fromByteBuffer(buffer);
 
-            // send to SetOffsetProcessor.
-            this.setOffsetEventTranslator.setBaseEvent(new BaseEvent(channelId, nioSelector));
-            this.setOffsetEventTranslator.setPutRequest(putRequest);
-            this.setOffsetDisruptor.publishEvent(this.setOffsetEventTranslator);
+            AddOffsetEvent addOffsetEvent = new AddOffsetEvent(new BaseEvent(channelId, nioSelector), putRequest);
+
+            addOffsetProcessor.put(addOffsetEvent);
         }
         // TODO: add another commands.
         else
