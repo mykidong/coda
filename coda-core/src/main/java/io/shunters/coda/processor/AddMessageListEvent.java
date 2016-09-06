@@ -1,8 +1,6 @@
 package io.shunters.coda.processor;
 
-import io.shunters.coda.message.Message;
-import io.shunters.coda.message.MessageList;
-import io.shunters.coda.offset.QueueShard;
+import io.shunters.coda.offset.QueueShardMessageList;
 
 import java.util.List;
 
@@ -32,43 +30,5 @@ public class AddMessageListEvent {
 
     public List<QueueShardMessageList> getQueueShardMessageLists() {
         return queueShardMessageLists;
-    }
-
-    public static class  QueueShardMessageList
-    {
-        private QueueShard queueShard;
-        private long firstOffset;
-        private MessageList messageList;
-
-        public QueueShardMessageList(QueueShard queueShard, long firstOffset, MessageList messageList)
-        {
-            this.queueShard = queueShard;
-            this.firstOffset = firstOffset;
-            this.messageList = messageList;
-        }
-
-        public QueueShard getQueueShard() {
-            return queueShard;
-        }
-
-        public void setQueueShard(QueueShard queueShard) {
-            this.queueShard = queueShard;
-        }
-
-        public long getFirstOffset() {
-            return firstOffset;
-        }
-
-        public void setFirstOffset(long firstOffset) {
-            this.firstOffset = firstOffset;
-        }
-
-        public MessageList getMessageList() {
-            return messageList;
-        }
-
-        public void setMessageList(MessageList messageList) {
-            this.messageList = messageList;
-        }
     }
 }

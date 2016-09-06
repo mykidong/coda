@@ -1,7 +1,7 @@
 package io.shunters.coda.processor;
 
 import com.lmax.disruptor.EventTranslator;
-import io.shunters.coda.offset.QueueShard;
+import io.shunters.coda.offset.QueueShardMessageList;
 
 import java.util.List;
 
@@ -10,20 +10,14 @@ import java.util.List;
  */
 public class StoreEventTranslator implements EventTranslator<StoreEvent>{
 
-    private QueueShard queueShard;
-    private List<AddMessageListEvent.QueueShardMessageList> queueShardMessageLists;
+    private List<QueueShardMessageList> queueShardMessageLists;
 
-    public void setQueueShard(QueueShard queueShard) {
-        this.queueShard = queueShard;
-    }
-
-    public void setQueueShardMessageLists(List<AddMessageListEvent.QueueShardMessageList> queueShardMessageLists) {
+    public void setQueueShardMessageLists(List<QueueShardMessageList> queueShardMessageLists) {
         this.queueShardMessageLists = queueShardMessageLists;
     }
 
     @Override
     public void translateTo(StoreEvent storeEvent, long l) {
-        storeEvent.setQueueShard(this.queueShard);
         storeEvent.setQueueShardMessageLists(this.queueShardMessageLists);
     }
 }

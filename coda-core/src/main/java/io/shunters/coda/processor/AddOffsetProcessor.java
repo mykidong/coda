@@ -8,6 +8,7 @@ import io.shunters.coda.message.MessageOffset;
 import io.shunters.coda.offset.OffsetHandler;
 import io.shunters.coda.offset.OffsetManager;
 import io.shunters.coda.offset.QueueShard;
+import io.shunters.coda.offset.QueueShardMessageList;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +44,7 @@ public class AddOffsetProcessor extends AbstractQueueThread<AddOffsetEvent> {
 
         int messageId = baseRequestHeader.getMessageId();
 
-        List<AddMessageListEvent.QueueShardMessageList> queueShardMessageLists = new ArrayList<>();
+        List<QueueShardMessageList> queueShardMessageLists = new ArrayList<>();
 
         List<PutRequest.QueueMessageWrap> queueMessageWrapList = putRequest.getQueueMessageWraps();
         for(PutRequest.QueueMessageWrap queueMessageWrap : queueMessageWrapList)
@@ -87,13 +88,13 @@ public class AddOffsetProcessor extends AbstractQueueThread<AddOffsetEvent> {
 
 
                 // construct QueueShardMessageList of AddMessageListEvent.
-                AddMessageListEvent.QueueShardMessageList queueShardMessageList = new AddMessageListEvent.QueueShardMessageList(new QueueShard(queue, shardId), firstOffset, messageList);
+                QueueShardMessageList queueShardMessageList = new QueueShardMessageList(new QueueShard(queue, shardId), firstOffset, messageList);
                 queueShardMessageLists.add(queueShardMessageList);
             }
         }
 
         // send to AddMessageList processor.
-        AddMessageListEvent storeEvent = new AddMessageListEvent(baseEvent, messageId, queueShardMessageLists);
-        this.addMessageListProcessor.put(storeEvent);
+        AddMessageListEvent addMessageListEvent = new AddMessageListEvent(baseEvent, messageId, queueShardMessageLists);
+        this.addMessageListProcessor.put(addMessageListEvent);
     }
 }

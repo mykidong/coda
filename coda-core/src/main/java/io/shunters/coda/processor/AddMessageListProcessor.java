@@ -4,26 +4,31 @@ import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.command.PutResponse;
 import io.shunters.coda.message.BaseResponseHeader;
 import io.shunters.coda.offset.QueueShard;
+import io.shunters.coda.offset.QueueShardMessageList;
 import io.shunters.coda.util.DisruptorBuilder;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by mykidong on 2016-09-01.
  */
 public class AddMessageListProcessor extends AbstractQueueThread<AddMessageListEvent>{
 
-    private Disruptor<SortMessageListEvent> sortMessageListDisruptor;
-    private SortMessageListEventTranslator sortMessageListEventTranslator;
+    private Disruptor<StoreEvent> storeDisruptor;
+    private StoreEventTranslator storeEventTranslator;
 
     public AddMessageListProcessor()
     {
-        SortMessageListProcessor sortMessageListProcessor = new SortMessageListProcessor();
-        sortMessageListProcessor.start();
-        sortMessageListDisruptor = DisruptorBuilder.singleton("SortMessageList", SortMessageListEvent.FACTORY, 1024, sortMessageListProcessor);
-        this.sortMessageListEventTranslator = new SortMessageListEventTranslator();
+        StoreProcessor storeProcessor = new StoreProcessor();
+        storeProcessor.start();
+
+        storeDisruptor = DisruptorBuilder.singleton("Store", StoreEvent.FACTORY, 1024, storeProcessor);
+        this.storeEventTranslator = new StoreEventTranslator();
     }
 
 
@@ -32,18 +37,18 @@ public class AddMessageListProcessor extends AbstractQueueThread<AddMessageListE
     {
         BaseEvent baseEvent = storeEvent.getBaseEvent();
         int messageId = storeEvent.getMessageId();
-        List<AddMessageListEvent.QueueShardMessageList> queueShardMessageLists = storeEvent.getQueueShardMessageLists();
+        List<QueueShardMessageList> queueShardMessageLists = storeEvent.getQueueShardMessageLists();
 
-        // put MessageList to SortMessageListProcessor for the shard of the queue.
-        this.sortMessageListEventTranslator.setQueueShardMessageLists(queueShardMessageLists);
-        this.sortMessageListDisruptor.publishEvent(this.sortMessageListEventTranslator);
+        // put MessageList to StoreProcessor for the shard of the queue.
+        this.storeEventTranslator.setQueueShardMessageLists(queueShardMessageLists);
+        this.storeDisruptor.publishEvent(this.storeEventTranslator);
 
         // prepare response.
         BaseResponseHeader baseResponseHeader = new BaseResponseHeader(messageId);
 
         Map<String, List<PutResponse.QueuePutResult.ShardPutResult>> queueShardPutResultMap = new HashMap<>();
 
-        for(AddMessageListEvent.QueueShardMessageList queueShardMessageList : queueShardMessageLists)
+        for(QueueShardMessageList queueShardMessageList : queueShardMessageLists)
         {
             QueueShard queueShard = queueShardMessageList.getQueueShard();
 

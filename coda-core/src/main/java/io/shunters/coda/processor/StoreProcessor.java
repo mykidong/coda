@@ -1,7 +1,9 @@
 package io.shunters.coda.processor;
 
 import com.lmax.disruptor.EventHandler;
+import io.shunters.coda.message.MessageList;
 import io.shunters.coda.offset.QueueShard;
+import io.shunters.coda.offset.QueueShardMessageList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,9 +23,17 @@ public class StoreProcessor extends AbstractQueueThread<StoreEvent> implements E
 
     @Override
     public void process(StoreEvent event) {
-        QueueShard queueShard = event.getQueueShard();
-        List<AddMessageListEvent.QueueShardMessageList> messageList = event.getQueueShardMessageLists();
+        List<QueueShardMessageList> queueShardMessageLists = event.getQueueShardMessageLists();
 
-        // TODO: Save MessageList to File!!!
+        for(QueueShardMessageList queueShardMessageList : queueShardMessageLists)
+        {
+            QueueShard queueShard = queueShardMessageList.getQueueShard();
+            long firstOffset = queueShardMessageList.getFirstOffset();
+            MessageList messageList = queueShardMessageList.getMessageList();
+
+            // TODO: Save MessageList to Segment!!!
+
+            //log.info("queue shard [{}], first offset [{}]", queueShardMessageList.getQueueShard().toString(), queueShardMessageList.getFirstOffset());
+        }
     }
 }

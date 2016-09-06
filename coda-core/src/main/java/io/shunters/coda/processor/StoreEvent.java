@@ -1,7 +1,7 @@
 package io.shunters.coda.processor;
 
 import com.lmax.disruptor.EventFactory;
-import io.shunters.coda.offset.QueueShard;
+import io.shunters.coda.offset.QueueShardMessageList;
 
 import java.util.List;
 
@@ -10,22 +10,14 @@ import java.util.List;
  */
 public class StoreEvent {
 
-    private QueueShard queueShard;
-    private List<AddMessageListEvent.QueueShardMessageList> queueShardMessageLists;
+    private List<QueueShardMessageList> queueShardMessageLists;
 
-    public QueueShard getQueueShard() {
-        return queueShard;
-    }
 
-    public void setQueueShard(QueueShard queueShard) {
-        this.queueShard = queueShard;
-    }
-
-    public List<AddMessageListEvent.QueueShardMessageList> getQueueShardMessageLists() {
+    public List<QueueShardMessageList> getQueueShardMessageLists() {
         return queueShardMessageLists;
     }
 
-    public void setQueueShardMessageLists(List<AddMessageListEvent.QueueShardMessageList> queueShardMessageLists) {
+    public void setQueueShardMessageLists(List<QueueShardMessageList> queueShardMessageLists) {
         this.queueShardMessageLists = queueShardMessageLists;
     }
 
