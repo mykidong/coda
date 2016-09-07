@@ -1,7 +1,6 @@
-package io.shunters.coda.util;
+package io.shunters.coda.store;
 
 import io.shunters.coda.ProducerTestSkip;
-import io.shunters.coda.store.OffsetIndex;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.junit.Assert;
 import org.junit.Before;
@@ -57,7 +56,7 @@ public class OffsetIndexTestSkip {
     }
 
     @Test
-    public void raf() throws Exception
+    public void slicing() throws Exception
     {
         File file = new File("/tmp/coda-data/test.index");
         if(file.exists())
