@@ -1,9 +1,11 @@
 package io.shunters.coda.offset;
 
 import io.shunters.coda.processor.ChannelProcessor;
+import io.shunters.coda.store.OffsetIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,12 +68,9 @@ public class OffsetManager implements OffsetHandler{
         this.queueShardOffsetMap.put(queueShard, new AtomicLong(offset));
     }
 
-    @Override
-    public void loadOffset() {
-        synchronized (lock)
-        {
-            // TODO: load offset from segment and index files.
-        }
-
+    private void loadOffset() {
+        // TODO: load last offset from offset index files.
+        long lastOffset = new OffsetIndex(new File("C:\\tmp\\1.index"), 1).getLastOffset();
+        this.queueShardOffsetMap.put(new QueueShard("any-queue", 0), new AtomicLong(lastOffset));
     }
 }

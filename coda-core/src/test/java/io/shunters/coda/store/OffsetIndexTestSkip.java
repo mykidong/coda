@@ -90,4 +90,13 @@ public class OffsetIndexTestSkip {
         }
 
     }
+
+    @Test
+    public void read() throws Exception
+    {
+        File file = new File("C:\\tmp\\1.index");
+
+        OffsetIndex offsetIndex = new OffsetIndex(file, 1);
+        offsetIndex.printEntries();
+    }
 }

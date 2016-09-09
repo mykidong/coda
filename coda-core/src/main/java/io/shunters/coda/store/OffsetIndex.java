@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -20,73 +19,69 @@ public class OffsetIndex {
     private final ReentrantLock lock = new ReentrantLock();
 
     private long baseOffset;
-    private RandomAccessFile raf;
-    private MappedByteBuffer mmap;
-    private int entryCount = 0;
+    private FileChannel fileChannel;
+    private long size = 0;
     private long lastOffset = 0;
 
     public OffsetIndex(File file, long baseOffset)
     {
         this.baseOffset = baseOffset;
         try {
-            boolean isNew = file.createNewFile();
-            raf = new RandomAccessFile(file, "rw");
-
-            // TODO: file length to be configurable.
-            long length = 1024 * 1024 * 10; // 10MB.
-            raf.setLength(length);
-            mmap = raf.getChannel().map(FileChannel.MapMode.READ_WRITE, 0, length);
-            if(isNew)
-            {
-                mmap.position(0);
+            if(!file.exists()) {
+                file.createNewFile();
             }
 
-            initEntryCount();
-            log.info("initial entry count [{}]", entryCount);
+            RandomAccessFile raf = new RandomAccessFile(file, "rw");
+            fileChannel = raf.getChannel();
+            size = raf.length();
+
+            log.info("initial size [{}]", size);
 
             readLastOffset();
             log.info("last offset [{}]", lastOffset);
         }catch (IOException e)
         {
             throw new RuntimeException(e);
-        }finally {
-            try {
-                raf.close();
-            }catch (IOException e)
-            {
-                e.printStackTrace();
-            }
         }
     }
 
-    private void initEntryCount()
+    public long getLastOffset()
     {
-        ByteBuffer buffer = mmap.duplicate();
-        buffer.rewind();
-        while (buffer.hasRemaining())
-        {
-            int value = buffer.getInt(entryCount * 8);
-            if(value <= 0)
-            {
-                break;
-            }
+        return this.lastOffset;
+    }
 
-            entryCount++;
+    private ByteBuffer getMMap(int position, long length)
+    {
+        try {
+            return fileChannel.map(FileChannel.MapMode.READ_WRITE, position, length).duplicate();
+        }catch (IOException e)
+        {
+            throw new RuntimeException(e);
         }
+    }
+
+    private int getEntryCount()
+    {
+        return (int)(size / 8);
     }
 
     private void readLastOffset()
     {
-        if(entryCount > 0)
+        if(this.getEntryCount() > 0)
         {
-            this.lastOffset = baseOffset + this.getDeltaOffset(mmap, entryCount -1);
+            this.lastOffset = baseOffset + this.getDeltaOffset(getMMap(0, size), this.getEntryCount() -1);
         }
     }
 
     public void printEntries()
     {
-        ByteBuffer buffer = mmap.duplicate();
-        for(int i = 0; i < entryCount; i++)
+        if(size == 0)
+        {
+            log.info("no entries to print");
+        }
+
+        ByteBuffer buffer = getMMap(0, size).duplicate();
+        for(int i = 0; i < this.getEntryCount(); i++)
         {
             long firstOffset = baseOffset + getDeltaOffset(buffer, i);
             int position = getPosition(buffer, i);
@@ -99,17 +94,22 @@ public class OffsetIndex {
         lock.lock();
         try {
             if(lastOffset < firstOffset) {
-                mmap.putInt((int) (firstOffset - baseOffset));
-                mmap.putInt(position);
-                entryCount++;
+                fileChannel.position((int)size);
+                ByteBuffer buffer = ByteBuffer.allocate(8);
+                buffer.putInt((int) (firstOffset - baseOffset));
+                buffer.putInt(position);
+                buffer.rewind();
+                fileChannel.write(buffer);
+
+                size += 8;
                 lastOffset = firstOffset;
             }
             else
             {
                 // search for the entry index whose offset value is greater than the target offset(firstOffset) and difference between them is smallest.
-                ByteBuffer buffer = mmap.duplicate();
+                ByteBuffer buffer = this.getMMap(0, size).duplicate();
                 int first = 0;
-                int last = entryCount -1;
+                int last = (int)this.getEntryCount() -1;
                 while(first <= last)
                 {
                     int middle = (first + last) / 2;
@@ -131,39 +131,41 @@ public class OffsetIndex {
                 int entryIndex = first;
 
                 // slice the buffer from the chosen entry index.
-                byte[] lastBuffer = new byte[(entryCount * 8) - (entryIndex * 8)];
+                byte[] lastBytes = new byte[(this.getEntryCount() * 8) - (entryIndex * 8)];
                 buffer.position(entryIndex * 8);
-                buffer.get(lastBuffer);
+                buffer.get(lastBytes);
+
+                ByteBuffer lastByteBuffer = ByteBuffer.wrap(lastBytes);
+                lastByteBuffer.rewind();
 
                 // put new offset entry.
-                mmap.position(entryIndex * 8);
-                mmap.putInt((int) (firstOffset - baseOffset));
-                mmap.putInt(position);
+                fileChannel.position(entryIndex * 8);
+
+                ByteBuffer newBuffer = ByteBuffer.allocate(8);
+                newBuffer.putInt((int) (firstOffset - baseOffset));
+                newBuffer.putInt(position);
+                newBuffer.rewind();
+                fileChannel.write(newBuffer);
 
                 // after that, append the sliced buffer.
-                mmap.put(lastBuffer);
-                entryCount++;
+                fileChannel.write(lastByteBuffer);
+
+                size += 8;
             }
-        }finally {
+        }catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+        finally {
             lock.unlock();
         }
     }
 
-
-    public void flush()
-    {
-        lock.lock();
-        try {
-            mmap.force();
-        }finally {
-            lock.unlock();
-        }
-    }
 
     private int getEntryIndex(ByteBuffer buffer, long offset)
     {
         int first = 0;
-        int last = entryCount -1;
+        int last = this.getEntryCount() -1;
         while(first <= last)
         {
             int middle = (first + last) / 2;
@@ -187,7 +189,12 @@ public class OffsetIndex {
 
     public OffsetPosition getFirstOffsetPosition(long offset)
     {
-        ByteBuffer buffer = mmap.duplicate();
+        if(size == 0)
+        {
+            return null;
+        }
+
+        ByteBuffer buffer = this.getMMap(0, size).duplicate();
         int entryIndex = this.getEntryIndex(buffer, offset);
 
         long firstOffset = baseOffset + getDeltaOffset(buffer, entryIndex);
