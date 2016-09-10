@@ -1,6 +1,7 @@
 package io.shunters.coda.store;
 
 import io.shunters.coda.message.MessageList;
+import io.shunters.coda.message.MessageOffset;
 import io.shunters.coda.offset.QueueShard;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,8 +102,34 @@ public class StoreManager implements StoreHandler {
     public MessageList getMessageList(QueueShard queueShard, long offset, int maxByteSize) {
         if(segmentMap.containsKey(queueShard))
         {
-            Segment segment = segmentMap.get(queueShard).get(this.getSegmentIndex(queueShard, offset));
-            return segment.getMessageList(offset, maxByteSize);
+            int segmentIndex = this.getSegmentIndex(queueShard, offset);
+
+            List<MessageOffset> messageOffsets = new ArrayList<>();
+            for(int i = segmentIndex; i < segmentMap.get(queueShard).size(); i++) {
+                Segment segment = segmentMap.get(queueShard).get(segmentIndex);
+
+                // get message list from the current segment.
+                Segment.GetMessageList getMessageList = segment.getMessageList(offset, maxByteSize);
+                long currentOffset = getMessageList.getCurrentOffset();
+                int maxByteSizeRemained = getMessageList.getMaxByteSizeRemained();
+                MessageList messageList = getMessageList.getMessageList();
+                if (messageList.getMessageOffsets().size() > 0) {
+                    // if max. byte size remained, call the next segment to get more message list.
+                    if (maxByteSizeRemained > 0) {
+                        // call next segment.
+                        offset = currentOffset;
+                        maxByteSize = maxByteSizeRemained;
+                        continue;
+                    } else {
+                        messageOffsets.addAll(messageOffsets.size(), messageList.getMessageOffsets());
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            return new MessageList(messageOffsets);
         }
         else {
             log.warn("queue shard [{}] does not exist.", queueShard.toString());

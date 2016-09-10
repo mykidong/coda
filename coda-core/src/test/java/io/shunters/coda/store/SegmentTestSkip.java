@@ -42,7 +42,7 @@ public class SegmentTestSkip {
         }
         segment.printEntries();
 
-        MessageList messageList = segment.getMessageList(525, 5000);
+        MessageList messageList = segment.getMessageList(525, 5000).getMessageList();
         log.info(messageList.toString());
     }
 

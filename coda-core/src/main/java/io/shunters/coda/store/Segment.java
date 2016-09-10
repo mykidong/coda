@@ -9,14 +9,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Created by mykidong on 2016-09-07.
+ * TODO: Rolling segment file to offset.
  */
 public class Segment {
     private static Logger log = LoggerFactory.getLogger(Segment.class);
@@ -92,7 +91,7 @@ public class Segment {
         }
     }
 
-    public MessageList getMessageList(long offset, int maxByteSize)
+    public GetMessageList getMessageList(long offset, int maxByteSize)
     {
         if(size == 0)
         {
@@ -104,6 +103,11 @@ public class Segment {
         List<MessageOffset> messageOffsetList = new ArrayList<>();
         while(lengthSum < maxByteSize) {
             OffsetIndex.OffsetPosition offsetPosition = offsetIndex.getFirstOffsetPosition(currentOffset);
+            if(offsetPosition == null)
+            {
+                break;
+            }
+
             int position = offsetPosition.getPosition();
 
             // TODO: it may cause to be memory-exhausting???
@@ -124,7 +128,7 @@ public class Segment {
             currentOffset++;
         }
 
-        return new MessageList(messageOffsetList);
+        return new GetMessageList(currentOffset, (maxByteSize - lengthSum), new MessageList(messageOffsetList));
     }
 
 
@@ -148,6 +152,32 @@ public class Segment {
             }
 
             log.info("message list [{}]", messageList.toString());
+        }
+    }
+
+    public static class GetMessageList
+    {
+        private long currentOffset;
+        private int maxByteSizeRemained;
+        private MessageList messageList;
+
+        public GetMessageList(long currentOffset, int maxByteSizeRemained, MessageList messageList)
+        {
+            this.currentOffset = currentOffset;
+            this.maxByteSizeRemained = maxByteSizeRemained;
+            this.messageList = messageList;
+        }
+
+        public long getCurrentOffset() {
+            return currentOffset;
+        }
+
+        public int getMaxByteSizeRemained() {
+            return maxByteSizeRemained;
+        }
+
+        public MessageList getMessageList() {
+            return messageList;
         }
     }
 }

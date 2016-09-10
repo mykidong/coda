@@ -11,7 +11,7 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Created by mykidong on 2016-09-07.
+ * TODO: Rolling offset index file to offset.
  */
 public class OffsetIndex {
     private static Logger log = LoggerFactory.getLogger(OffsetIndex.class);
@@ -190,6 +190,11 @@ public class OffsetIndex {
     public OffsetPosition getFirstOffsetPosition(long offset)
     {
         if(size == 0)
+        {
+            return null;
+        }
+        // offset does not exist in this index file.
+        else if(offset > lastOffset)
         {
             return null;
         }
