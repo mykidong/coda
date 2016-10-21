@@ -99,6 +99,8 @@ public class MemoryMappedFileCodaQueue implements CodaQueue {
 
     @Override
     public Object get() {
+        String value = null;
+
         if(size.get() == 0)
         {
             return null;
@@ -107,9 +109,35 @@ public class MemoryMappedFileCodaQueue implements CodaQueue {
         lock.lock();
         try
         {
-            ByteBuffer buffer = getMMap((int)currentReadPosition.get(), size.get());
+            value = getWithFileChannel();
+        }
+        finally {
+            lock.unlock();
+        }
 
-            int length = buffer.getInt();
+        return value;
+    }
+
+
+    private String getWithFileChannel()
+    {
+        try {
+            fileChannel.position((int) currentReadPosition.get());
+
+            ByteBuffer bufferLength = ByteBuffer.allocate(4);
+            fileChannel.read(bufferLength);
+            bufferLength.rewind();
+
+            int length = bufferLength.getInt();
+            if (length <= 0) {
+                return null;
+            }
+
+            ByteBuffer buffer = ByteBuffer.allocate(length);
+            fileChannel.position((int) currentReadPosition.get() + 4);
+            fileChannel.read(buffer);
+
+            buffer.rewind();
             byte[] bytes = new byte[length];
             buffer.get(bytes);
 
@@ -120,9 +148,11 @@ public class MemoryMappedFileCodaQueue implements CodaQueue {
             currentReadPosition.addAndGet(total);
 
             return v;
-        }
-        finally {
-            lock.unlock();
+        }catch (IOException e)
+        {
+            e.printStackTrace();
+
+            return null;
         }
     }
 }
