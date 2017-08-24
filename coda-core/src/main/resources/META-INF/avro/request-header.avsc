@@ -1,0 +1,20 @@
+{
+  "namespace":"io.shunters.coda.avro.api",
+  "type":"record",
+  "doc":"Request Header",
+  "name":"RequestHeader",
+  "fields":[
+    {
+      "name":"apiKey",
+      "type":"int"
+    },
+    {
+      "name":"correlationId",
+      "type":"int"
+    },
+    {
+      "name":"clientId",
+      "type":"string"
+    }
+  ]
+}
