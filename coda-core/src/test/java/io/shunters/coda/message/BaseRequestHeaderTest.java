@@ -1,6 +1,7 @@
 package io.shunters.coda.message;
 
 import io.shunters.coda.processor.ToRequestProcessor;
+import io.shunters.coda.protocol.ClientServerSpec;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -37,7 +38,7 @@ public class BaseRequestHeaderTest {
 
     public static BaseRequestHeader buildInstance()
     {
-        short commandId = ToRequestProcessor.PUT_REQUEST;
+        short commandId = ClientServerSpec.API_KEY_PRODUCE_REQUEST;
         short version = 1;
         int messageId = 20345;
         String clientId = "test-client-id";

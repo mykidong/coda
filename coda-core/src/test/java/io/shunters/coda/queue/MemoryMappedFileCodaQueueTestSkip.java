@@ -21,7 +21,7 @@ import java.util.concurrent.*;
 /**
  * Created by mykidong on 2016-10-21.
  */
-public class MemoryMappedFileCodaQueueTest {
+public class MemoryMappedFileCodaQueueTestSkip {
 
     private int size;
     private int thread;

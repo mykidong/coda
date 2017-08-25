@@ -1,61 +1,95 @@
 package io.shunters.coda.processor;
 
-import io.shunters.coda.command.PutRequest;
-import io.shunters.coda.command.RequestByteBuffer;
-import io.shunters.coda.offset.OffsetManager;
-
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.util.concurrent.TimeUnit;
+import com.cedarsoftware.util.io.JsonWriter;
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.dsl.Disruptor;
+import io.shunters.coda.api.service.AvroDeSerService;
+import io.shunters.coda.protocol.ClientServerSpec;
+import io.shunters.coda.util.DisruptorBuilder;
+import io.shunters.coda.util.SingletonUtils;
+import org.apache.avro.generic.GenericRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by mykidong on 2016-09-01.
  */
-public class ToRequestProcessor extends AbstractQueueThread<RequestByteBuffer> {
+public class ToRequestProcessor implements EventHandler<BaseMessage.BaseMessageBytesEvent> {
 
-    public static final short META_REQUEST = 0;
+    private static Logger log = LoggerFactory.getLogger(ToRequestProcessor.class);
 
-    public static final short PUT_REQUEST = 100;
-    public static final short GET_REQUEST = 101;
+    /**
+     * avro de-/serialization service.
+     */
+    private static AvroDeSerService avroDeSerService = SingletonUtils.getClasspathAvroDeSerServiceSingleton();
 
-    public static final short OFFSET_REQUEST = 200;
-    public static final short OFFSET_PUT_REQUEST = 201;
-    public static final short OFFSET_GET_REQUEST = 202;
+    /**
+     * base message event disruptor.
+     */
+    private Disruptor<BaseMessage.BaseMessageEvent> baseMessageEventDisruptor;
 
-    public static final short CONSUMER_GROUP_COORDINATOR_REQUEST = 300;
-    public static final short JOIN_GROUP_REQUEST = 301;
-    public static final short HEARTBEAT_GROUP_REQUEST = 302;
-    public static final short LEAVE_GROUP_REQUEST = 303;
-    public static final short SYNC_GROUP_REQUEST = 304;
-    public static final short DESCRIBE_GROUPS_REQUEST = 305;
-    public static final short LIST_GROUPS_REQUEST = 306;
+    /**
+     * base message event translator.
+     */
+    private BaseMessage.BaseMessageEventTranslator baseMessageEventTranslator;
 
-    private AddOffsetProcessor addOffsetProcessor;
+    private static final Object lock = new Object();
 
-    public ToRequestProcessor()
+    private static ToRequestProcessor toRequestProcessor;
+
+    public static ToRequestProcessor singleton()
     {
-        addOffsetProcessor = new AddOffsetProcessor();
-        addOffsetProcessor.start();
+        if(toRequestProcessor == null)
+        {
+            synchronized (lock)
+            {
+                if(toRequestProcessor == null)
+                {
+                    toRequestProcessor = new ToRequestProcessor();
+                }
+            }
+        }
+        return toRequestProcessor;
     }
 
 
-    @Override
-    public void process(RequestByteBuffer requestByteBuffer)
+    private ToRequestProcessor()
     {
-        String channelId = requestByteBuffer.getChannelId();
-        short commandId = requestByteBuffer.getCommandId();
-        ByteBuffer buffer = requestByteBuffer.getBuffer();
-        NioSelector nioSelector = requestByteBuffer.getNioSelector();
+        this.baseMessageEventDisruptor = DisruptorBuilder.singleton("AddOffset", BaseMessage.BaseMessageEvent.FACTORY, 1024, AddOffsetProcessor.singleton());
+        this.baseMessageEventTranslator = new BaseMessage.BaseMessageEventTranslator();
+    }
 
-        if(commandId == PUT_REQUEST)
+    @Override
+    public void onEvent(BaseMessage.BaseMessageBytesEvent baseMessageBytesEvent, long l, boolean b) throws Exception {
+        short apiKey = baseMessageBytesEvent.getApiKey();
+        byte[] messsageBytes = baseMessageBytesEvent.getMessageBytes();
+
+        // avro schema name.
+        String schemaName = SingletonUtils.getApiKeyAvroSchemaMapSingleton().getSchemaName(apiKey);
+
+        // deserialize avro bytes message.
+        GenericRecord genericRecord = avroDeSerService.deserialize(schemaName, messsageBytes);
+
+
+        if(apiKey == ClientServerSpec.API_KEY_PRODUCE_REQUEST)
         {
-            PutRequest putRequest = PutRequest.fromByteBuffer(buffer);
+            String prettyJson = JsonWriter.formatJson(genericRecord.toString());
+            log.info("produce request message: \n" + prettyJson);
+            log.info("--------------------");
 
-            AddOffsetEvent addOffsetEvent = new AddOffsetEvent(new BaseEvent(channelId, nioSelector), putRequest);
 
-            addOffsetProcessor.put(addOffsetEvent);
+//            // construct base message event.
+//            this.baseMessageEventTranslator.setChannelId(baseMessageBytesEvent.getChannelId());
+//            this.baseMessageEventTranslator.setNioSelector(baseMessageBytesEvent.getNioSelector());
+//            this.baseMessageEventTranslator.setApiKey(baseMessageBytesEvent.getApiKey());
+//            this.baseMessageEventTranslator.setApiVersion(baseMessageBytesEvent.getApiVersion());
+//            this.baseMessageEventTranslator.setMessageFormat(baseMessageBytesEvent.getMessageFormat());
+//            this.baseMessageEventTranslator.setGenericRecord(genericRecord);
+//
+//            // send base message event to disruptor.
+//            this.baseMessageEventDisruptor.publishEvent(this.baseMessageEventTranslator);
         }
-        // TODO: add another commands.
+        // TODO: add another api implementation.
         else
         {
             // TODO:

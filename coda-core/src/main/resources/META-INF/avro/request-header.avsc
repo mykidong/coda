@@ -5,10 +5,6 @@
   "name":"RequestHeader",
   "fields":[
     {
-      "name":"apiKey",
-      "type":"int"
-    },
-    {
       "name":"correlationId",
       "type":"int"
     },

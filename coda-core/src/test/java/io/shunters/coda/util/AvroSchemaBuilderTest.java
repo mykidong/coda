@@ -37,7 +37,7 @@ public class AvroSchemaBuilderTest {
         pathList.add("/META-INF/avro/records.avsc");
         pathList.add("/META-INF/avro/produce-request.avsc");
 
-        AvroSchemaBuilder avroSchemaBuilder = new AvroSchemaBuilder((String[])pathList.toArray(new String[0]));
+        AvroSchemaBuilder avroSchemaBuilder = AvroSchemaBuilder.singletonForSchemaPaths((String[])pathList.toArray(new String[0]));
 
         String schemaKey = "io.shunters.coda.avro.api.ProduceRequest";
         Schema schema = avroSchemaBuilder.getSchema(schemaKey);
@@ -49,7 +49,7 @@ public class AvroSchemaBuilderTest {
     {
         String pathDir = "/META-INF/avro";
 
-        AvroSchemaBuilder avroSchemaBuilder = new AvroSchemaBuilder(pathDir);
+        AvroSchemaBuilder avroSchemaBuilder = AvroSchemaBuilder.singleton(pathDir);
         String schemaKey = "io.shunters.coda.avro.api.ProduceRequest";
         Schema schema = avroSchemaBuilder.getSchema(schemaKey);
         log.info("schema key: [" + schemaKey + "]\n" + schema.toString(true));

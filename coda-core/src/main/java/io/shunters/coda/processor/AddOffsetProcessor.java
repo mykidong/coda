@@ -1,5 +1,7 @@
 package io.shunters.coda.processor;
 
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.command.PutRequest;
 import io.shunters.coda.message.BaseRequestHeader;
 import io.shunters.coda.message.Message;
@@ -10,19 +12,40 @@ import io.shunters.coda.offset.OffsetManager;
 import io.shunters.coda.offset.QueueShard;
 import io.shunters.coda.offset.QueueShardMessageList;
 
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by mykidong on 2016-09-01.
  */
-public class AddOffsetProcessor extends AbstractQueueThread<AddOffsetEvent> {
+public class AddOffsetProcessor extends AbstractQueueThread<AddOffsetEvent> implements EventHandler<BaseMessage.BaseMessageEvent> {
 
     private AddMessageListProcessor addMessageListProcessor;
 
     private OffsetHandler offsetHandler;
 
-    public AddOffsetProcessor()
+    private static final Object lock = new Object();
+
+    private static AddOffsetProcessor addOffsetProcessor;
+
+    public static AddOffsetProcessor singleton()
+    {
+        if(addOffsetProcessor == null)
+        {
+            synchronized (lock)
+            {
+                if(addOffsetProcessor == null)
+                {
+                    addOffsetProcessor = new AddOffsetProcessor();
+                }
+            }
+        }
+        return addOffsetProcessor;
+    }
+
+
+    private AddOffsetProcessor()
     {
         this.addMessageListProcessor = new AddMessageListProcessor();
         this.addMessageListProcessor.start();
@@ -96,5 +119,11 @@ public class AddOffsetProcessor extends AbstractQueueThread<AddOffsetEvent> {
         // send to AddMessageList processor.
         AddMessageListEvent addMessageListEvent = new AddMessageListEvent(baseEvent, messageId, queueShardMessageLists);
         this.addMessageListProcessor.put(addMessageListEvent);
+    }
+
+
+    @Override
+    public void onEvent(BaseMessage.BaseMessageEvent baseMessageEvent, long l, boolean b) throws Exception {
+
     }
 }

@@ -1,5 +1,6 @@
 package io.shunters.coda.util;
 
+import io.shunters.coda.store.StoreManager;
 import org.apache.avro.Schema;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
@@ -21,10 +22,46 @@ public class AvroSchemaBuilder {
 
     private static Logger log = LoggerFactory.getLogger(AvroSchemaBuilder.class);
 
+    public static final String DEFAULT_AVRO_SCHEMA_DIR_PATH = "/META-INF/avro";
+
     private Map<String, Schema> schemas = new HashMap<>();
 
+    private static final Object lock = new Object();
 
-    public AvroSchemaBuilder(String... schemaPaths) {
+    private static AvroSchemaBuilder avroSchemaBuilder;
+
+    public static AvroSchemaBuilder singleton(String pathDir)
+    {
+        if(avroSchemaBuilder == null)
+        {
+            synchronized (lock)
+            {
+                if(avroSchemaBuilder == null)
+                {
+                    avroSchemaBuilder = new AvroSchemaBuilder(pathDir);
+                }
+            }
+        }
+        return avroSchemaBuilder;
+    }
+
+    public static AvroSchemaBuilder singletonForSchemaPaths(String... schemaPaths)
+    {
+        if(avroSchemaBuilder == null)
+        {
+            synchronized (lock)
+            {
+                if(avroSchemaBuilder == null)
+                {
+                    avroSchemaBuilder = new AvroSchemaBuilder(schemaPaths);
+                }
+            }
+        }
+        return avroSchemaBuilder;
+    }
+
+
+    private AvroSchemaBuilder(String... schemaPaths) {
 
         List<String> jsonList = new ArrayList<>();
         for (String schemaPath : schemaPaths) {
@@ -33,10 +70,10 @@ public class AvroSchemaBuilder {
             jsonList.add(json);
         }
 
-        resolveSchemaRecursively(jsonList);
+        resolveSchemaRepeatedly(jsonList);
     }
 
-    public AvroSchemaBuilder(String pathDir)
+    private AvroSchemaBuilder(String pathDir)
     {
         try {
             List<String> files = IOUtils.readLines(this.getClass().getResourceAsStream(pathDir), Charsets.UTF_8);
@@ -51,7 +88,7 @@ public class AvroSchemaBuilder {
                 jsonList.add(json);
             });
 
-            resolveSchemaRecursively(jsonList);
+            resolveSchemaRepeatedly(jsonList);
 
         }catch (IOException e)
         {
@@ -59,7 +96,7 @@ public class AvroSchemaBuilder {
         }
     }
 
-    private void resolveSchemaRecursively(List<String> jsonList) {
+    private void resolveSchemaRepeatedly(List<String> jsonList) {
         List<String> unresolvedSchemaList = this.putSchemaToMap(jsonList);
         log.info("unresolvedSchemaList: [" + unresolvedSchemaList.size() + "]");
 
