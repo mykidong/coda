@@ -71,56 +71,19 @@ public class BaseMessage {
             this.messageBytes = messageBytes;
         }
 
-        public static final EventFactory<BaseMessageBytesEvent> FACTORY = new EventFactory<BaseMessageBytesEvent>() {
-            @Override
-            public BaseMessageBytesEvent newInstance() {
-                return new BaseMessageBytesEvent();
-            }
-        };
+        public static final EventFactory<BaseMessageBytesEvent> FACTORY = BaseMessageBytesEvent::new;
     }
 
-    public static class BaseMessageBytesEventTranslator implements EventTranslator<BaseMessageBytesEvent>
+    public static class BaseMessageBytesEventTranslator extends BaseMessageBytesEvent implements EventTranslator<BaseMessageBytesEvent>
     {
-        private String channelId;
-        private NioSelector nioSelector;
-
-        private short apiKey;
-        private short apiVersion;
-        private byte messageFormat;
-        private byte[] messageBytes;
-
-        public void setChannelId(String channelId) {
-            this.channelId = channelId;
-        }
-
-        public void setNioSelector(NioSelector nioSelector) {
-            this.nioSelector = nioSelector;
-        }
-
-        public void setApiKey(short apiKey) {
-            this.apiKey = apiKey;
-        }
-
-        public void setApiVersion(short apiVersion) {
-            this.apiVersion = apiVersion;
-        }
-
-        public void setMessageFormat(byte messageFormat) {
-            this.messageFormat = messageFormat;
-        }
-
-        public void setMessageBytes(byte[] messageBytes) {
-            this.messageBytes = messageBytes;
-        }
-
         @Override
         public void translateTo(BaseMessageBytesEvent baseMessageBytesEvent, long l) {
-            baseMessageBytesEvent.setChannelId(this.channelId);
-            baseMessageBytesEvent.setNioSelector(this.nioSelector);
-            baseMessageBytesEvent.setApiKey(this.apiKey);
-            baseMessageBytesEvent.setApiVersion(this.apiVersion);
-            baseMessageBytesEvent.setMessageFormat(this.messageFormat);
-            baseMessageBytesEvent.setMessageBytes(this.messageBytes);
+            baseMessageBytesEvent.setChannelId(this.getChannelId());
+            baseMessageBytesEvent.setNioSelector(this.getNioSelector());
+            baseMessageBytesEvent.setApiKey(this.getApiKey());
+            baseMessageBytesEvent.setApiVersion(this.getApiVersion());
+            baseMessageBytesEvent.setMessageFormat(this.getMessageFormat());
+            baseMessageBytesEvent.setMessageBytes(this.getMessageBytes());
         }
     }
 
@@ -136,57 +99,20 @@ public class BaseMessage {
             this.genericRecord = genericRecord;
         }
 
-        public static final EventFactory<BaseMessageEvent> FACTORY = new EventFactory<BaseMessageEvent>() {
-            @Override
-            public BaseMessageEvent newInstance() {
-                return new BaseMessageEvent();
-            }
-        };
+        public static final EventFactory<BaseMessageEvent> FACTORY = BaseMessageEvent::new;
     }
 
 
-    public static class BaseMessageEventTranslator implements EventTranslator<BaseMessageEvent>
+    public static class BaseMessageEventTranslator extends BaseMessageEvent implements EventTranslator<BaseMessageEvent>
     {
-        private String channelId;
-        private NioSelector nioSelector;
-
-        private short apiKey;
-        private short apiVersion;
-        private byte messageFormat;
-        private GenericRecord genericRecord;
-
-        public void setChannelId(String channelId) {
-            this.channelId = channelId;
-        }
-
-        public void setNioSelector(NioSelector nioSelector) {
-            this.nioSelector = nioSelector;
-        }
-
-        public void setApiKey(short apiKey) {
-            this.apiKey = apiKey;
-        }
-
-        public void setApiVersion(short apiVersion) {
-            this.apiVersion = apiVersion;
-        }
-
-        public void setMessageFormat(byte messageFormat) {
-            this.messageFormat = messageFormat;
-        }
-
-        public void setGenericRecord(GenericRecord genericRecord) {
-            this.genericRecord = genericRecord;
-        }
-
         @Override
         public void translateTo(BaseMessageEvent baseMessageEvent, long l) {
-            baseMessageEvent.setChannelId(this.channelId);
-            baseMessageEvent.setNioSelector(this.nioSelector);
-            baseMessageEvent.setApiKey(this.apiKey);
-            baseMessageEvent.setApiVersion(this.apiVersion);
-            baseMessageEvent.setMessageFormat(this.messageFormat);
-            baseMessageEvent.setGenericRecord(this.genericRecord);
+            baseMessageEvent.setChannelId(this.getChannelId());
+            baseMessageEvent.setNioSelector(this.getNioSelector());
+            baseMessageEvent.setApiKey(this.getApiKey());
+            baseMessageEvent.setApiVersion(this.getApiVersion());
+            baseMessageEvent.setMessageFormat(this.getMessageFormat());
+            baseMessageEvent.setGenericRecord(this.getGenericRecord());
         }
     }
 
