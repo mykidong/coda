@@ -1,9 +1,14 @@
 package io.shunters.coda;
 
+import io.shunters.coda.api.ProduceRequestTestSkip;
+import io.shunters.coda.api.service.AvroDeSerService;
 import io.shunters.coda.command.PutRequest;
 import io.shunters.coda.command.PutRequestTest;
 import io.shunters.coda.command.PutResponse;
+import io.shunters.coda.protocol.ClientServerSpec;
+import io.shunters.coda.util.SingletonUtils;
 import io.shunters.coda.util.TimeUtils;
+import org.apache.avro.generic.GenericRecord;
 import org.junit.Test;
 
 import java.io.InputStream;
@@ -22,8 +27,8 @@ public class OldClientTestSkip {
     public void run() throws Exception {
         String host = System.getProperty("host", "localhost");
         int port = Integer.parseInt(System.getProperty("port", "9911"));
-        int MAX_THREAD = Integer.parseInt(System.getProperty("threadSize", "5"));
-        long pause = Long.parseLong(System.getProperty("pause", "1000000"));
+        int MAX_THREAD = Integer.parseInt(System.getProperty("threadSize", "20"));
+        long pause = Long.parseLong(System.getProperty("pause", "100"));
 
         ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD);
 
@@ -44,6 +49,8 @@ public class OldClientTestSkip {
         private String host;
         private int port;
 
+        private byte[] produceRequestAvroBytes;
+
         public ClientTask(String host, int port, long pause) {
             this.host = host;
             this.port = port;
@@ -56,6 +63,10 @@ public class OldClientTestSkip {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
+            GenericRecord produceRequest = new ProduceRequestTestSkip().buildProduceRequest();
+            AvroDeSerService avroDeSerService = SingletonUtils.getClasspathAvroDeSerServiceSingleton();
+            produceRequestAvroBytes = avroDeSerService.serialize(produceRequest);
         }
 
 
@@ -63,43 +74,31 @@ public class OldClientTestSkip {
         public void run() {
             while (true) {
                 try {
-                    // PutRequest.
+                    // ProduceRequest message.
+                    int totalSize = (2 + 2 + 1) + produceRequestAvroBytes.length;
 
-                    PutRequest putRequest = PutRequestTest.buildPutRequest();
-
-                    int length = putRequest.length();
-
-                    ByteBuffer buffer = putRequest.write();
+                    ByteBuffer buffer = ByteBuffer.allocate(4 + totalSize);
+                    buffer.putInt(totalSize); // total size.
+                    buffer.putShort(ClientServerSpec.API_KEY_PRODUCE_REQUEST); // api key.
+                    buffer.putShort((short) 1); // api version.
+                    buffer.put(ClientServerSpec.MESSAGE_FORMAT_AVRO); // message format.
+                    buffer.put(produceRequestAvroBytes); // produce request avro bytes.
 
                     buffer.rewind();
 
-                    int totalSize = length + 4;
-                    byte[] putRequestBytes = new byte[totalSize];
-                    buffer.get(putRequestBytes);
+                    byte[] produceRequestBytes = new byte[4 + totalSize];
+                    buffer.get(produceRequestBytes);
 
-
-                    out.write(putRequestBytes);
+                    out.write(produceRequestBytes);
                     out.flush();
 
 
-                    // PutResponse.
-
-                    byte[] responseTotalSizeBytes = new byte[4];
-
-                    int readNum = in.read(responseTotalSizeBytes);
-
-                    int responseTotalSize = ByteBuffer.wrap(responseTotalSizeBytes).getInt();
-
-                    byte[] responseBytes = new byte[responseTotalSize];
+                    // Response.
+                    byte[] responseBytes = new byte["hello, I'm response!".length()];
 
                     in.read(responseBytes);
 
-
-                    ByteBuffer responseBuffer = ByteBuffer.wrap(responseBytes);
-
-                    PutResponse putResponse = PutResponse.fromByteBuffer(responseBuffer);
-
-                    //System.out.println("response: [" + putResponse.toString() + "]");
+                    //System.out.println("response: [" + new String(responseBytes) + "]");
 
                     TimeUtils.pause(this.pause);
 

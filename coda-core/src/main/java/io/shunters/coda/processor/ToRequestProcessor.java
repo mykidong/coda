@@ -11,6 +11,9 @@ import org.apache.avro.generic.GenericRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+
 /**
  * Created by mykidong on 2016-09-01.
  */
@@ -73,9 +76,9 @@ public class ToRequestProcessor implements EventHandler<BaseMessage.BaseMessageB
 
         if(apiKey == ClientServerSpec.API_KEY_PRODUCE_REQUEST)
         {
-            String prettyJson = JsonWriter.formatJson(genericRecord.toString());
-            log.info("produce request message: \n" + prettyJson);
-            log.info("--------------------");
+//            String prettyJson = JsonWriter.formatJson(genericRecord.toString());
+//            log.info("produce request message: \n" + prettyJson);
+//            log.info("--------------------");
 
 
 //            // construct base message event.
@@ -88,6 +91,23 @@ public class ToRequestProcessor implements EventHandler<BaseMessage.BaseMessageB
 //
 //            // send base message event to disruptor.
 //            this.baseMessageEventDisruptor.publishEvent(this.baseMessageEventTranslator);
+
+
+            // TODO: build response message to respond back to client.
+            //       IT IS JUST TEST PURPOSE, which must be removed in future.
+            byte[] testResponse = "hello, I'm response!".getBytes();
+            ByteBuffer responseBuffer = ByteBuffer.allocate(testResponse.length);
+            responseBuffer.put(testResponse);
+            responseBuffer.rewind();
+
+            String channelId = baseMessageBytesEvent.getChannelId();
+            NioSelector nioSelector = baseMessageBytesEvent.getNioSelector();
+
+            // attache response to channel with SelectionKey.OP_WRITE, which causes channel processor to send response to the client.
+            nioSelector.attach(channelId, SelectionKey.OP_WRITE, responseBuffer);
+
+            // wakeup must be called.
+            nioSelector.wakeup();
         }
         // TODO: add another api implementation.
         else
