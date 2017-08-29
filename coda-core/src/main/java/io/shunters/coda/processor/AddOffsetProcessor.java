@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Created by mykidong on 2016-09-01.
  */
-public class AddOffsetProcessor extends AbstractQueueThread<AddOffsetEvent> implements EventHandler<BaseMessage.BaseMessageEvent> {
+public class AddOffsetProcessor extends AbstractQueueThread<AddOffsetEvent> implements EventHandler<BaseMessage.RequestEvent> {
 
     private AddMessageListProcessor addMessageListProcessor;
 
@@ -123,7 +123,7 @@ public class AddOffsetProcessor extends AbstractQueueThread<AddOffsetEvent> impl
 
 
     @Override
-    public void onEvent(BaseMessage.BaseMessageEvent baseMessageEvent, long l, boolean b) throws Exception {
+    public void onEvent(BaseMessage.RequestEvent requestEvent, long l, boolean b) throws Exception {
 
     }
 }

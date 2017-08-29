@@ -1,6 +1,5 @@
 package io.shunters.coda.processor;
 
-import com.cedarsoftware.util.io.JsonWriter;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.api.service.AvroDeSerService;
@@ -12,14 +11,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
 
 /**
  * Created by mykidong on 2016-09-01.
  */
-public class ToRequestProcessor implements EventHandler<BaseMessage.BaseMessageBytesEvent> {
+public class RequestProcessor implements EventHandler<BaseMessage.RequestBytesEvent> {
 
-    private static Logger log = LoggerFactory.getLogger(ToRequestProcessor.class);
+    private static Logger log = LoggerFactory.getLogger(RequestProcessor.class);
 
     /**
      * avro de-/serialization service.
@@ -27,45 +25,57 @@ public class ToRequestProcessor implements EventHandler<BaseMessage.BaseMessageB
     private static AvroDeSerService avroDeSerService = SingletonUtils.getClasspathAvroDeSerServiceSingleton();
 
     /**
-     * base message event disruptor.
+     * request event disruptor.
      */
-    private Disruptor<BaseMessage.BaseMessageEvent> baseMessageEventDisruptor;
+    private Disruptor<BaseMessage.RequestEvent> requestEventDisruptor;
 
     /**
-     * base message event translator.
+     * request event translator.
      */
-    private BaseMessage.BaseMessageEventTranslator baseMessageEventTranslator;
+    private BaseMessage.RequestEventTranslator requestEventTranslator;
+
+    /**
+     * response event disruptor.
+     */
+    private Disruptor<BaseMessage.ResponseEvent> responseEventDisruptor;
+
+    /**
+     * response event translator.
+     */
+    private BaseMessage.ResponseEventTranslator responseEventTranslator;
 
     private static final Object lock = new Object();
 
-    private static ToRequestProcessor toRequestProcessor;
+    private static RequestProcessor requestProcessor;
 
-    public static ToRequestProcessor singleton()
-    {
-        if(toRequestProcessor == null)
-        {
-            synchronized (lock)
-            {
-                if(toRequestProcessor == null)
-                {
-                    toRequestProcessor = new ToRequestProcessor();
+    public static RequestProcessor singleton() {
+        if (requestProcessor == null) {
+            synchronized (lock) {
+                if (requestProcessor == null) {
+                    requestProcessor = new RequestProcessor();
                 }
             }
         }
-        return toRequestProcessor;
+        return requestProcessor;
     }
 
 
-    private ToRequestProcessor()
-    {
-        this.baseMessageEventDisruptor = DisruptorBuilder.singleton("AddOffset", BaseMessage.BaseMessageEvent.FACTORY, 1024, AddOffsetProcessor.singleton());
-        this.baseMessageEventTranslator = new BaseMessage.BaseMessageEventTranslator();
+    private RequestProcessor() {
+        this.requestEventDisruptor = DisruptorBuilder.singleton("AddOffsetProcessor", BaseMessage.RequestEvent.FACTORY, 1024, AddOffsetProcessor.singleton());
+        this.requestEventTranslator = new BaseMessage.RequestEventTranslator();
+
+        this.responseEventDisruptor = DisruptorBuilder.singleton("ResponseProcessor", BaseMessage.ResponseEvent.FACTORY, 1024, ResponseProcessor.singleton());
+        this.responseEventTranslator = new BaseMessage.ResponseEventTranslator();
     }
 
     @Override
-    public void onEvent(BaseMessage.BaseMessageBytesEvent baseMessageBytesEvent, long l, boolean b) throws Exception {
-        short apiKey = baseMessageBytesEvent.getApiKey();
-        byte[] messsageBytes = baseMessageBytesEvent.getMessageBytes();
+    public void onEvent(BaseMessage.RequestBytesEvent requestBytesEvent, long l, boolean b) throws Exception {
+        String channelId = requestBytesEvent.getChannelId();
+        NioSelector nioSelector = requestBytesEvent.getNioSelector();
+        ByteBuffer responseBuffer = null;
+
+        short apiKey = requestBytesEvent.getApiKey();
+        byte[] messsageBytes = requestBytesEvent.getMessageBytes();
 
         // avro schema name.
         String schemaName = SingletonUtils.getApiKeyAvroSchemaMapSingleton().getSchemaName(apiKey);
@@ -74,8 +84,7 @@ public class ToRequestProcessor implements EventHandler<BaseMessage.BaseMessageB
         GenericRecord genericRecord = avroDeSerService.deserialize(schemaName, messsageBytes);
 
 
-        if(apiKey == ClientServerSpec.API_KEY_PRODUCE_REQUEST)
-        {
+        if (apiKey == ClientServerSpec.API_KEY_PRODUCE_REQUEST) {
 //            String prettyJson = JsonWriter.formatJson(genericRecord.toString());
 //            log.info("produce request message: \n" + prettyJson);
 //            log.info("--------------------");
@@ -96,23 +105,21 @@ public class ToRequestProcessor implements EventHandler<BaseMessage.BaseMessageB
             // TODO: build response message to respond back to client.
             //       IT IS JUST TEST PURPOSE, which must be removed in future.
             byte[] testResponse = "hello, I'm response!".getBytes();
-            ByteBuffer responseBuffer = ByteBuffer.allocate(testResponse.length);
+            responseBuffer = ByteBuffer.allocate(testResponse.length);
             responseBuffer.put(testResponse);
             responseBuffer.rewind();
 
-            String channelId = baseMessageBytesEvent.getChannelId();
-            NioSelector nioSelector = baseMessageBytesEvent.getNioSelector();
-
-            // attache response to channel with SelectionKey.OP_WRITE, which causes channel processor to send response to the client.
-            nioSelector.attach(channelId, SelectionKey.OP_WRITE, responseBuffer);
-
-            // wakeup must be called.
-            nioSelector.wakeup();
         }
         // TODO: add another api implementation.
-        else
-        {
+        else {
             // TODO:
         }
+
+        // send response event to response disruptor.
+        this.responseEventTranslator.setChannelId(channelId);
+        this.responseEventTranslator.setNioSelector(nioSelector);
+        this.responseEventTranslator.setResponseBuffer(responseBuffer);
+
+        this.responseEventDisruptor.publishEvent(this.responseEventTranslator);
     }
 }

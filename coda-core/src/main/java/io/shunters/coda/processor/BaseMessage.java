@@ -4,6 +4,8 @@ import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventTranslator;
 import org.apache.avro.generic.GenericRecord;
 
+import java.nio.ByteBuffer;
+
 /**
  * Created by mykidong on 2017-08-25.
  */
@@ -59,7 +61,7 @@ public class BaseMessage {
         }
     }
 
-    public static class BaseMessageBytesEvent extends BaseHeader
+    public static class RequestBytesEvent extends BaseHeader
     {
         private byte[] messageBytes;
 
@@ -71,13 +73,13 @@ public class BaseMessage {
             this.messageBytes = messageBytes;
         }
 
-        public static final EventFactory<BaseMessageBytesEvent> FACTORY = BaseMessageBytesEvent::new;
+        public static final EventFactory<RequestBytesEvent> FACTORY = RequestBytesEvent::new;
     }
 
-    public static class BaseMessageBytesEventTranslator extends BaseMessageBytesEvent implements EventTranslator<BaseMessageBytesEvent>
+    public static class RequestBytesEventTranslator extends RequestBytesEvent implements EventTranslator<RequestBytesEvent>
     {
         @Override
-        public void translateTo(BaseMessageBytesEvent baseMessageBytesEvent, long l) {
+        public void translateTo(RequestBytesEvent baseMessageBytesEvent, long l) {
             baseMessageBytesEvent.setChannelId(this.getChannelId());
             baseMessageBytesEvent.setNioSelector(this.getNioSelector());
             baseMessageBytesEvent.setApiKey(this.getApiKey());
@@ -87,7 +89,7 @@ public class BaseMessage {
         }
     }
 
-    public static class BaseMessageEvent extends BaseHeader
+    public static class RequestEvent extends BaseHeader
     {
         private GenericRecord genericRecord;
 
@@ -99,14 +101,14 @@ public class BaseMessage {
             this.genericRecord = genericRecord;
         }
 
-        public static final EventFactory<BaseMessageEvent> FACTORY = BaseMessageEvent::new;
+        public static final EventFactory<RequestEvent> FACTORY = RequestEvent::new;
     }
 
 
-    public static class BaseMessageEventTranslator extends BaseMessageEvent implements EventTranslator<BaseMessageEvent>
+    public static class RequestEventTranslator extends RequestEvent implements EventTranslator<RequestEvent>
     {
         @Override
-        public void translateTo(BaseMessageEvent baseMessageEvent, long l) {
+        public void translateTo(RequestEvent baseMessageEvent, long l) {
             baseMessageEvent.setChannelId(this.getChannelId());
             baseMessageEvent.setNioSelector(this.getNioSelector());
             baseMessageEvent.setApiKey(this.getApiKey());
@@ -115,5 +117,51 @@ public class BaseMessage {
             baseMessageEvent.setGenericRecord(this.getGenericRecord());
         }
     }
+
+    public static class ResponseEvent {
+
+        private String channelId;
+        private NioSelector nioSelector;
+
+        private ByteBuffer responseBuffer;
+
+        public String getChannelId() {
+            return channelId;
+        }
+
+        public void setChannelId(String channelId) {
+            this.channelId = channelId;
+        }
+
+        public NioSelector getNioSelector() {
+            return nioSelector;
+        }
+
+        public void setNioSelector(NioSelector nioSelector) {
+            this.nioSelector = nioSelector;
+        }
+
+        public ByteBuffer getResponseBuffer() {
+            return responseBuffer;
+        }
+
+        public void setResponseBuffer(ByteBuffer responseBuffer) {
+            this.responseBuffer = responseBuffer;
+        }
+
+        public static final EventFactory<ResponseEvent> FACTORY = ResponseEvent::new;
+    }
+
+    public static class ResponseEventTranslator extends ResponseEvent implements EventTranslator<ResponseEvent>
+    {
+
+        @Override
+        public void translateTo(ResponseEvent responseEvent, long l) {
+            responseEvent.setChannelId(this.getChannelId());
+            responseEvent.setNioSelector(this.getNioSelector());
+            responseEvent.setResponseBuffer(this.getResponseBuffer());
+        }
+    }
+
 
 }

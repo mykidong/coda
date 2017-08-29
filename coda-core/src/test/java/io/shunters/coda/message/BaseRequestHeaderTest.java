@@ -1,6 +1,5 @@
 package io.shunters.coda.message;
 
-import io.shunters.coda.processor.ToRequestProcessor;
 import io.shunters.coda.protocol.ClientServerSpec;
 import org.junit.Assert;
 import org.junit.Test;

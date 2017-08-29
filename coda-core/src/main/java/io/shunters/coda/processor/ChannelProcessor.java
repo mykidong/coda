@@ -27,14 +27,14 @@ public class ChannelProcessor extends Thread {
     private MetricRegistry metricRegistry;
 
     /**
-     * base message bytes event disruptor.
+     * request bytes event disruptor.
      */
-    private Disruptor<BaseMessage.BaseMessageBytesEvent> baseMessageBytesEventDisruptor;
+    private Disruptor<BaseMessage.RequestBytesEvent> requestBytesEventDisruptor;
 
     /**
-     * base message bytes event translator.
+     * request bytes event translator.
      */
-    private BaseMessage.BaseMessageBytesEventTranslator baseMessageBytesEventTranslator;
+    private BaseMessage.RequestBytesEventTranslator requestBytesEventTranslator;
 
 
     public ChannelProcessor(MetricRegistry metricRegistry) {
@@ -43,8 +43,8 @@ public class ChannelProcessor extends Thread {
         this.queue = new LinkedBlockingQueue<>();
         this.nioSelector = NioSelector.open();
 
-        baseMessageBytesEventDisruptor = DisruptorBuilder.singleton("ToRequest", BaseMessage.BaseMessageBytesEvent.FACTORY, 1024, ToRequestProcessor.singleton());
-        this.baseMessageBytesEventTranslator = new BaseMessage.BaseMessageBytesEventTranslator();
+        requestBytesEventDisruptor = DisruptorBuilder.singleton("RequestProcessor", BaseMessage.RequestBytesEvent.FACTORY, 1024, RequestProcessor.singleton());
+        this.requestBytesEventTranslator = new BaseMessage.RequestBytesEventTranslator();
     }
 
     public void put(SocketChannel socketChannel) {
@@ -80,9 +80,7 @@ public class ChannelProcessor extends Thread {
 
                     if (key.isReadable()) {
                         this.request(key);
-                    }
-                    else if(key.isWritable())
-                    {
+                    } else if (key.isWritable()) {
                         this.response(key);
                     }
                 }
@@ -122,8 +120,7 @@ public class ChannelProcessor extends Thread {
 
         // TODO: just avro message format is allowed.
         //       another formats like protocol buffers, etc. should be supported in future.
-        if(messageFormat != ClientServerSpec.MESSAGE_FORMAT_AVRO)
-        {
+        if (messageFormat != ClientServerSpec.MESSAGE_FORMAT_AVRO) {
             log.error("Not Avro Message Format!");
 
             return;
@@ -134,15 +131,15 @@ public class ChannelProcessor extends Thread {
         buffer.get(messsageBytes);
 
         // construct disruptor translator.
-        this.baseMessageBytesEventTranslator.setChannelId(channelId);
-        this.baseMessageBytesEventTranslator.setNioSelector(this.nioSelector);
-        this.baseMessageBytesEventTranslator.setApiKey(apiKey);
-        this.baseMessageBytesEventTranslator.setApiVersion(apiVersion);
-        this.baseMessageBytesEventTranslator.setMessageFormat(messageFormat);
-        this.baseMessageBytesEventTranslator.setMessageBytes(messsageBytes);
+        this.requestBytesEventTranslator.setChannelId(channelId);
+        this.requestBytesEventTranslator.setNioSelector(this.nioSelector);
+        this.requestBytesEventTranslator.setApiKey(apiKey);
+        this.requestBytesEventTranslator.setApiVersion(apiVersion);
+        this.requestBytesEventTranslator.setMessageFormat(messageFormat);
+        this.requestBytesEventTranslator.setMessageBytes(messsageBytes);
 
-        // produce base message bytes event to disruptor.
-        this.baseMessageBytesEventDisruptor.publishEvent(this.baseMessageBytesEventTranslator);
+        // produce request bytes event to disruptor.
+        this.requestBytesEventDisruptor.publishEvent(this.requestBytesEventTranslator);
 
         this.metricRegistry.meter("ChannelProcessor.read").mark();
     }
@@ -152,8 +149,7 @@ public class ChannelProcessor extends Thread {
 
         ByteBuffer buffer = (ByteBuffer) key.attachment();
 
-        if(buffer == null)
-        {
+        if (buffer == null) {
             return;
         }
 
