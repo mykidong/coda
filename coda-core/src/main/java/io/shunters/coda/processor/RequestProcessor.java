@@ -1,5 +1,6 @@
 package io.shunters.coda.processor;
 
+import com.cedarsoftware.util.io.JsonWriter;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.api.service.AvroDeSerService;
@@ -87,7 +88,6 @@ public class RequestProcessor implements EventHandler<BaseMessage.RequestBytesEv
         if (apiKey == ClientServerSpec.API_KEY_PRODUCE_REQUEST) {
 //            String prettyJson = JsonWriter.formatJson(genericRecord.toString());
 //            log.info("produce request message: \n" + prettyJson);
-//            log.info("--------------------");
 
 
 //            // construct base message event.

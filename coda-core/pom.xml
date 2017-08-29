@@ -20,6 +20,10 @@
             <artifactId>avro-mapred</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.xerial.snappy</groupId>
+            <artifactId>snappy-java</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.lmax</groupId>
             <artifactId>disruptor</artifactId>
         </dependency>

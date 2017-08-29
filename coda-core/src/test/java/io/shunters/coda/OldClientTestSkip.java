@@ -10,6 +10,7 @@ import io.shunters.coda.util.SingletonUtils;
 import io.shunters.coda.util.TimeUtils;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Test;
+import org.xerial.snappy.Snappy;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -74,15 +75,19 @@ public class OldClientTestSkip {
         public void run() {
             while (true) {
                 try {
+                    // snappy compressed avro bytes.
+                    byte[] snappyCompressedAvro = Snappy.compress(produceRequestAvroBytes);
+
                     // ProduceRequest message.
-                    int totalSize = (2 + 2 + 1) + produceRequestAvroBytes.length;
+                    int totalSize = (2 + 2 + 1 + 1) + snappyCompressedAvro.length;
 
                     ByteBuffer buffer = ByteBuffer.allocate(4 + totalSize);
                     buffer.putInt(totalSize); // total size.
                     buffer.putShort(ClientServerSpec.API_KEY_PRODUCE_REQUEST); // api key.
                     buffer.putShort((short) 1); // api version.
                     buffer.put(ClientServerSpec.MESSAGE_FORMAT_AVRO); // message format.
-                    buffer.put(produceRequestAvroBytes); // produce request avro bytes.
+                    buffer.put(ClientServerSpec.COMPRESSION_CODEC_SNAPPY);
+                    buffer.put(snappyCompressedAvro); // produce request avro bytes.
 
                     buffer.rewind();
 

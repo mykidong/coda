@@ -10,6 +10,12 @@ public class ClientServerSpec {
      */
     public static final byte MESSAGE_FORMAT_AVRO = 1;
 
+    /**
+     * compression codec.
+     */
+    public static final byte COMPRESSION_CODEC_NONE = 0;
+    public static final byte COMPRESSION_CODEC_SNAPPY = 1;
+
 
     /**
      * api key and corresponding avro schema name.

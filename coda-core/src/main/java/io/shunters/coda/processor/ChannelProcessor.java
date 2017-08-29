@@ -6,6 +6,7 @@ import io.shunters.coda.protocol.ClientServerSpec;
 import io.shunters.coda.util.DisruptorBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -126,9 +127,18 @@ public class ChannelProcessor extends Thread {
             return;
         }
 
+        // compression codec.
+        byte compressionCodec = buffer.get();
+
         // message bytes.
-        byte[] messsageBytes = new byte[totalSize - (2 + 2 + 1)];
+        byte[] messsageBytes = new byte[totalSize - (2 + 2 + 1 + 1)];
         buffer.get(messsageBytes);
+
+        // if avro bytes is coompressed by snappy, uncompress them.
+        if(compressionCodec == ClientServerSpec.COMPRESSION_CODEC_SNAPPY)
+        {
+            messsageBytes = Snappy.uncompress(messsageBytes);
+        }
 
         // construct disruptor translator.
         this.requestBytesEventTranslator.setChannelId(channelId);

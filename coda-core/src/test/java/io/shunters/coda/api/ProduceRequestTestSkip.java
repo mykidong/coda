@@ -62,27 +62,33 @@ public class ProduceRequestTestSkip extends BaseRequestTest {
 
         Schema recordHeaderSchema = recordHeaderArraySchema.getElementType();
 
-        // record header.
-        GenericData.Record recordHeader = new GenericData.Record(recordHeaderSchema);
-        recordHeader.put("key", "header-key");
-        recordHeader.put("value", ByteBuffer.wrap("header-value".getBytes()));
+        int recordSize = 100;
 
-        // record header array.
-        GenericData.Array<GenericData.Record> recordHeaderArray = new GenericData.Array<GenericData.Record>(1, recordHeaderArraySchema);
-        recordHeaderArray.add(recordHeader);
+        // record array.
+        GenericData.Array<GenericData.Record> recordArray = new GenericData.Array<GenericData.Record>(recordSize, recordArraySchema);
+        for(int i = 0; i < recordSize; i++)
+        {
+            // record header.
+            GenericData.Record recordHeader = new GenericData.Record(recordHeaderSchema);
+            recordHeader.put("key", "header-key");
+            recordHeader.put("value", ByteBuffer.wrap("header-value".getBytes()));
 
-        // record.
-        GenericData.Record record = new GenericData.Record(recordSchema);
-        record.put("attributes", 1);
-        record.put("timestampDelta", 4);
-        record.put("offsetDelta", 400);
-        record.put("key", ByteBuffer.wrap("any-key".getBytes()));
-        record.put("value", ByteBuffer.wrap("any-record-value".getBytes()));
-        record.put("recordHeaders", recordHeaderArray);
+            // record header array.
+            GenericData.Array<GenericData.Record> recordHeaderArray = new GenericData.Array<GenericData.Record>(1, recordHeaderArraySchema);
+            recordHeaderArray.add(recordHeader);
 
-        // record header array.
-        GenericData.Array<GenericData.Record> recordArray = new GenericData.Array<GenericData.Record>(1, recordArraySchema);
-        recordArray.add(record);
+            // record.
+            GenericData.Record record = new GenericData.Record(recordSchema);
+            record.put("attributes", 1);
+            record.put("timestampDelta", 4);
+            record.put("offsetDelta", 400);
+            record.put("key", ByteBuffer.wrap(new String("any-key" + i).getBytes()));
+            record.put("value", ByteBuffer.wrap(new String("any-record-value-" + i).getBytes()));
+            record.put("recordHeaders", recordHeaderArray);
+
+            recordArray.add(record);
+        }
+
 
 
         // records.
