@@ -1,6 +1,5 @@
 package io.shunters.coda.processor;
 
-import com.cedarsoftware.util.io.JsonWriter;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.api.service.AvroDeSerService;
@@ -23,7 +22,7 @@ public class RequestProcessor implements EventHandler<BaseMessage.RequestBytesEv
     /**
      * avro de-/serialization service.
      */
-    private static AvroDeSerService avroDeSerService = SingletonUtils.getClasspathAvroDeSerServiceSingleton();
+    private static AvroDeSerService avroDeSerService = SingletonUtils.getAvroDeSerServiceSingleton();
 
     /**
      * request event disruptor.
@@ -62,7 +61,7 @@ public class RequestProcessor implements EventHandler<BaseMessage.RequestBytesEv
 
 
     private RequestProcessor() {
-        this.requestEventDisruptor = DisruptorBuilder.singleton("AddOffsetProcessor", BaseMessage.RequestEvent.FACTORY, 1024, AddOffsetProcessor.singleton());
+        this.requestEventDisruptor = DisruptorBuilder.singleton("StoreProcessor", BaseMessage.RequestEvent.FACTORY, 1024, StoreProcessor.singleton());
         this.requestEventTranslator = new BaseMessage.RequestEventTranslator();
 
         this.responseEventDisruptor = DisruptorBuilder.singleton("ResponseProcessor", BaseMessage.ResponseEvent.FACTORY, 1024, ResponseProcessor.singleton());
@@ -89,37 +88,27 @@ public class RequestProcessor implements EventHandler<BaseMessage.RequestBytesEv
 //            String prettyJson = JsonWriter.formatJson(genericRecord.toString());
 //            log.info("produce request message: \n" + prettyJson);
 
+            // construct request event.
+            this.requestEventTranslator.setChannelId(requestBytesEvent.getChannelId());
+            this.requestEventTranslator.setNioSelector(requestBytesEvent.getNioSelector());
+            this.requestEventTranslator.setApiKey(requestBytesEvent.getApiKey());
+            this.requestEventTranslator.setApiVersion(requestBytesEvent.getApiVersion());
+            this.requestEventTranslator.setMessageFormat(requestBytesEvent.getMessageFormat());
+            this.requestEventTranslator.setGenericRecord(genericRecord);
 
-//            // construct base message event.
-//            this.baseMessageEventTranslator.setChannelId(baseMessageBytesEvent.getChannelId());
-//            this.baseMessageEventTranslator.setNioSelector(baseMessageBytesEvent.getNioSelector());
-//            this.baseMessageEventTranslator.setApiKey(baseMessageBytesEvent.getApiKey());
-//            this.baseMessageEventTranslator.setApiVersion(baseMessageBytesEvent.getApiVersion());
-//            this.baseMessageEventTranslator.setMessageFormat(baseMessageBytesEvent.getMessageFormat());
-//            this.baseMessageEventTranslator.setGenericRecord(genericRecord);
-//
-//            // send base message event to disruptor.
-//            this.baseMessageEventDisruptor.publishEvent(this.baseMessageEventTranslator);
-
-
-            // TODO: build response message to respond back to client.
-            //       IT IS JUST TEST PURPOSE, which must be removed in future.
-            byte[] testResponse = "hello, I'm response!".getBytes();
-            responseBuffer = ByteBuffer.allocate(testResponse.length);
-            responseBuffer.put(testResponse);
-            responseBuffer.rewind();
-
+            // send request event to disruptor(StoreProcessor).
+            this.requestEventDisruptor.publishEvent(this.requestEventTranslator);
         }
         // TODO: add another api implementation.
         else {
             // TODO:
+
+            // send response event to response disruptor.
+            this.responseEventTranslator.setChannelId(channelId);
+            this.responseEventTranslator.setNioSelector(nioSelector);
+            this.responseEventTranslator.setResponseBuffer(responseBuffer);
+
+            this.responseEventDisruptor.publishEvent(this.responseEventTranslator);
         }
-
-        // send response event to response disruptor.
-        this.responseEventTranslator.setChannelId(channelId);
-        this.responseEventTranslator.setNioSelector(nioSelector);
-        this.responseEventTranslator.setResponseBuffer(responseBuffer);
-
-        this.responseEventDisruptor.publishEvent(this.responseEventTranslator);
     }
 }

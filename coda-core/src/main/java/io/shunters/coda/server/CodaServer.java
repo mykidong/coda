@@ -1,13 +1,10 @@
 package io.shunters.coda.server;
 
 import com.codahale.metrics.MetricRegistry;
-import io.shunters.coda.api.service.AvroDeSerService;
 import io.shunters.coda.metrics.MetricRegistryFactory;
 import io.shunters.coda.metrics.MetricsReporter;
 import io.shunters.coda.metrics.SystemOutMetricsReporter;
 import io.shunters.coda.processor.ChannelProcessor;
-import io.shunters.coda.service.ClasspathAvroDeSerServiceImpl;
-import io.shunters.coda.util.AvroSchemaBuilder;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

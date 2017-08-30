@@ -1,8 +1,5 @@
 package io.shunters.coda.protocol;
 
-import io.shunters.coda.service.ClasspathAvroDeSerServiceImpl;
-import io.shunters.coda.util.AvroSchemaBuilder;
-
 import java.util.HashMap;
 import java.util.Map;
 

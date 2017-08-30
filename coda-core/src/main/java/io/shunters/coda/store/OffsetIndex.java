@@ -11,10 +11,14 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
+ * Entry := DeltaOffset(4 Bytes) DataPosition(4 Bytes) DataSize(4 Bytes)
+ * <p>
  * TODO: Rolling offset index file to offset.
  */
 public class OffsetIndex {
     private static Logger log = LoggerFactory.getLogger(OffsetIndex.class);
+
+    private static final int ENTRY_SIZE = 12;
 
     private final ReentrantLock lock = new ReentrantLock();
 
@@ -23,11 +27,10 @@ public class OffsetIndex {
     private long size = 0;
     private long lastOffset = 0;
 
-    public OffsetIndex(File file, long baseOffset)
-    {
+    public OffsetIndex(File file, long baseOffset) {
         this.baseOffset = baseOffset;
         try {
-            if(!file.exists()) {
+            if (!file.exists()) {
                 file.createNewFile();
             }
 
@@ -39,91 +42,73 @@ public class OffsetIndex {
 
             readLastOffset();
             log.info("last offset [{}]", lastOffset);
-        }catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public long getLastOffset()
-    {
+    public long getLastOffset() {
         return this.lastOffset;
     }
 
-    private ByteBuffer getMMap(int position, long length)
-    {
+    private ByteBuffer getMMap(int position, long length) {
         try {
             return fileChannel.map(FileChannel.MapMode.READ_WRITE, position, length).duplicate();
-        }catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private int getEntryCount()
-    {
-        return (int)(size / 8);
+    private int getEntryCount() {
+        return (int) (size / ENTRY_SIZE);
     }
 
-    private void readLastOffset()
-    {
-        if(this.getEntryCount() > 0)
-        {
-            this.lastOffset = baseOffset + this.getDeltaOffset(getMMap(0, size), this.getEntryCount() -1);
+    private void readLastOffset() {
+        if (this.getEntryCount() > 0) {
+            this.lastOffset = baseOffset + this.getDeltaOffset(getMMap(0, size), this.getEntryCount() - 1);
         }
     }
 
-    public void printEntries()
-    {
-        if(size == 0)
-        {
+    public void printEntries() {
+        if (size == 0) {
             log.info("no entries to print");
         }
 
         ByteBuffer buffer = getMMap(0, size).duplicate();
-        for(int i = 0; i < this.getEntryCount(); i++)
-        {
+        for (int i = 0; i < this.getEntryCount(); i++) {
             long firstOffset = baseOffset + getDeltaOffset(buffer, i);
             int position = getPosition(buffer, i);
             log.info("(firstOffset, position) = ({}, {})", firstOffset, position);
         }
     }
 
-    public void add(long firstOffset, int position)
-    {
+    public void add(long firstOffset, int position, int dataSize) {
         lock.lock();
         try {
-            if(lastOffset < firstOffset) {
-                fileChannel.position((int)size);
-                ByteBuffer buffer = ByteBuffer.allocate(8);
+            if (lastOffset < firstOffset) {
+                fileChannel.position((int) size);
+                ByteBuffer buffer = ByteBuffer.allocate(ENTRY_SIZE);
                 buffer.putInt((int) (firstOffset - baseOffset));
                 buffer.putInt(position);
+                buffer.putInt(dataSize);
                 buffer.rewind();
                 fileChannel.write(buffer);
 
-                size += 8;
+                size += ENTRY_SIZE;
                 lastOffset = firstOffset;
-            }
-            else
-            {
+            } else {
                 // search for the entry index whose offset value is greater than the target offset(firstOffset) and difference between them is smallest.
                 ByteBuffer buffer = this.getMMap(0, size).duplicate();
                 int first = 0;
-                int last = (int)this.getEntryCount() -1;
-                while(first <= last)
-                {
+                int last = (int) this.getEntryCount() - 1;
+                while (first <= last) {
                     int middle = (first + last) / 2;
                     long retOffset = baseOffset + getDeltaOffset(buffer, middle);
-                    if(retOffset < firstOffset)
-                    {
+                    if (retOffset < firstOffset) {
                         first = middle + 1;
-                    }
-                    else if(retOffset > firstOffset)
-                    {
-                        last = middle -1;
-                    }
-                    else
-                    {
+                    } else if (retOffset > firstOffset) {
+                        last = middle - 1;
+                    } else {
                         throw new RuntimeException("Offset [" + firstOffset + "] Already exists.");
                     }
                 }
@@ -131,55 +116,47 @@ public class OffsetIndex {
                 int entryIndex = first;
 
                 // slice the buffer from the chosen entry index.
-                byte[] lastBytes = new byte[(this.getEntryCount() * 8) - (entryIndex * 8)];
-                buffer.position(entryIndex * 8);
+                byte[] lastBytes = new byte[(this.getEntryCount() * ENTRY_SIZE) - (entryIndex * ENTRY_SIZE)];
+                buffer.position(entryIndex * ENTRY_SIZE);
                 buffer.get(lastBytes);
 
                 ByteBuffer lastByteBuffer = ByteBuffer.wrap(lastBytes);
                 lastByteBuffer.rewind();
 
                 // put new offset entry.
-                fileChannel.position(entryIndex * 8);
+                fileChannel.position(entryIndex * ENTRY_SIZE);
 
-                ByteBuffer newBuffer = ByteBuffer.allocate(8);
+                ByteBuffer newBuffer = ByteBuffer.allocate(ENTRY_SIZE);
                 newBuffer.putInt((int) (firstOffset - baseOffset));
                 newBuffer.putInt(position);
+                newBuffer.putInt(dataSize);
                 newBuffer.rewind();
                 fileChannel.write(newBuffer);
 
                 // after that, append the sliced buffer.
                 fileChannel.write(lastByteBuffer);
 
-                size += 8;
+                size += ENTRY_SIZE;
             }
-        }catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new RuntimeException(e);
-        }
-        finally {
+        } finally {
             lock.unlock();
         }
     }
 
 
-    private int getEntryIndex(ByteBuffer buffer, long offset)
-    {
+    private int getEntryIndex(ByteBuffer buffer, long offset) {
         int first = 0;
-        int last = this.getEntryCount() -1;
-        while(first <= last)
-        {
+        int last = this.getEntryCount() - 1;
+        while (first <= last) {
             int middle = (first + last) / 2;
             long retOffset = baseOffset + getDeltaOffset(buffer, middle);
-            if(retOffset < offset)
-            {
+            if (retOffset < offset) {
                 first = middle + 1;
-            }
-            else if(retOffset > offset)
-            {
-                last = middle -1;
-            }
-            else
-            {
+            } else if (retOffset > offset) {
+                last = middle - 1;
+            } else {
                 return middle;
             }
         }
@@ -187,15 +164,12 @@ public class OffsetIndex {
         return last;
     }
 
-    public OffsetPosition getFirstOffsetPosition(long offset)
-    {
-        if(size == 0)
-        {
+    public OffsetPosition getFirstOffsetPosition(long offset) {
+        if (size == 0) {
             return null;
         }
         // offset does not exist in this index file.
-        else if(offset > lastOffset)
-        {
+        else if (offset > lastOffset) {
             return null;
         }
 
@@ -204,30 +178,33 @@ public class OffsetIndex {
 
         long firstOffset = baseOffset + getDeltaOffset(buffer, entryIndex);
         int position = getPosition(buffer, entryIndex);
+        int dataSize = this.getDataSize(buffer, entryIndex);
 
-        return new OffsetPosition(firstOffset, position);
+        return new OffsetPosition(firstOffset, position, dataSize);
     }
 
-    private int getDeltaOffset(ByteBuffer buffer, int n)
-    {
-        return buffer.getInt(n * 8);
+    private int getDeltaOffset(ByteBuffer buffer, int n) {
+        return buffer.getInt(n * ENTRY_SIZE);
     }
 
-    private int getPosition(ByteBuffer buffer, int n)
-    {
-        return buffer.getInt(n * 8 + 4);
+    private int getPosition(ByteBuffer buffer, int n) {
+        return buffer.getInt(n * ENTRY_SIZE + 4);
+    }
+
+    private int getDataSize(ByteBuffer buffer, int n) {
+        return buffer.getInt(n * ENTRY_SIZE + 8);
     }
 
 
-    public static class OffsetPosition
-    {
+    public static class OffsetPosition {
         private long offset;
         private int position;
+        private int dataSize;
 
-        public OffsetPosition(long offset, int position)
-        {
+        public OffsetPosition(long offset, int position, int dataSize) {
             this.offset = offset;
             this.position = position;
+            this.dataSize = dataSize;
         }
 
         public long getOffset() {
@@ -236,6 +213,10 @@ public class OffsetIndex {
 
         public int getPosition() {
             return position;
+        }
+
+        public int getDataSize() {
+            return dataSize;
         }
     }
 }

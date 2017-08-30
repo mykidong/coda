@@ -26,11 +26,9 @@ public class OffsetIndexTestSkip {
     }
 
     @Test
-    public void add() throws Exception
-    {
+    public void add() throws Exception {
         File file = new File("/tmp/coda-data/test.index");
-        if(file.exists())
-        {
+        if (file.exists()) {
             file.delete();
         }
 
@@ -38,16 +36,16 @@ public class OffsetIndexTestSkip {
 
         OffsetIndex offsetIndex = new OffsetIndex(file, 500);
 
-        offsetIndex.add(550, 100);
-        offsetIndex.add(560, 200);
-        offsetIndex.add(570, 300);
-        offsetIndex.add(580, 400);
+        offsetIndex.add(550, 100, 30);
+        offsetIndex.add(560, 200, 30);
+        offsetIndex.add(570, 300, 30);
+        offsetIndex.add(580, 400, 30);
 
         OffsetIndex.OffsetPosition offsetPositionForFirstOffset = offsetIndex.getFirstOffsetPosition(560);
         Assert.assertTrue(offsetPositionForFirstOffset.getOffset() == 560);
         Assert.assertTrue(offsetPositionForFirstOffset.getPosition() == 200);
 
-        offsetIndex.add(565, 250);
+        offsetIndex.add(565, 250, 30);
         OffsetIndex.OffsetPosition offsetPositionForArbitaryOffset = offsetIndex.getFirstOffsetPosition(568);
         Assert.assertTrue(offsetPositionForArbitaryOffset.getOffset() == 565);
         Assert.assertTrue(offsetPositionForArbitaryOffset.getPosition() == 250);
@@ -56,11 +54,9 @@ public class OffsetIndexTestSkip {
     }
 
     @Test
-    public void slicing() throws Exception
-    {
+    public void slicing() throws Exception {
         File file = new File("/tmp/coda-data/test.index");
-        if(file.exists())
-        {
+        if (file.exists()) {
             file.delete();
         }
 
@@ -83,8 +79,7 @@ public class OffsetIndexTestSkip {
         mmap.putInt(13);
         mmap.put(slice);
 
-        for(int i = 0; i < 5; i++)
-        {
+        for (int i = 0; i < 5; i++) {
             int value = mmap.getInt(i * 4);
             System.out.println(value);
         }
@@ -92,8 +87,7 @@ public class OffsetIndexTestSkip {
     }
 
     @Test
-    public void read() throws Exception
-    {
+    public void read() throws Exception {
         File file = new File("C:\\tmp\\1.index");
 
         OffsetIndex offsetIndex = new OffsetIndex(file, 1);

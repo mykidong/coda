@@ -24,7 +24,7 @@ public class SnappyCompressionTestSkip extends BaseRequestTest {
         // produce request.
         GenericRecord produceRequest = new ProduceRequestTestSkip().buildProduceRequest();
 
-        AvroDeSerService avroDeSerService = SingletonUtils.getClasspathAvroDeSerServiceSingleton();
+        AvroDeSerService avroDeSerService = SingletonUtils.getAvroDeSerServiceSingleton();
 
         byte[] serializedAvro = avroDeSerService.serialize(produceRequest);
         log.info("serializedAvro size: [" + serializedAvro.length + "]");

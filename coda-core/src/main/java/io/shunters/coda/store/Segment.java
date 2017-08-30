@@ -67,8 +67,11 @@ public class Segment {
         {
             int currentPosition = (int) size;
 
+            // TODO: avro bytes data size.
+            int dataSize = 0;
+
             // add offset position to offset index file.
-            offsetIndex.add(firstOffset, currentPosition);
+            offsetIndex.add(firstOffset, currentPosition, dataSize);
 
             fileChannel.position(currentPosition);
 

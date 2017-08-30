@@ -66,7 +66,7 @@ public class OldClientTestSkip {
             }
 
             GenericRecord produceRequest = new ProduceRequestTestSkip().buildProduceRequest();
-            AvroDeSerService avroDeSerService = SingletonUtils.getClasspathAvroDeSerServiceSingleton();
+            AvroDeSerService avroDeSerService = SingletonUtils.getAvroDeSerServiceSingleton();
             produceRequestAvroBytes = avroDeSerService.serialize(produceRequest);
         }
 

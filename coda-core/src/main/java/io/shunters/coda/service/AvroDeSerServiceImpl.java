@@ -13,32 +13,27 @@ import java.io.ByteArrayOutputStream;
 /**
  * Created by mykidong on 2017-08-25.
  */
-public class ClasspathAvroDeSerServiceImpl implements AvroDeSerService {
+public class AvroDeSerServiceImpl implements AvroDeSerService {
 
-    private static ClasspathAvroDeSerServiceImpl classpathAvroDeSerService;
+    private static AvroDeSerService avroDeSerService;
 
     private AvroSchemaBuilder avroSchemaBuilder;
 
     private static final Object lock = new Object();
 
-    public static ClasspathAvroDeSerServiceImpl singleton(AvroSchemaBuilder avroSchemaBuilder)
-    {
-        if(classpathAvroDeSerService == null)
-        {
-            synchronized (lock)
-            {
-                if(classpathAvroDeSerService == null)
-                {
-                    classpathAvroDeSerService = new ClasspathAvroDeSerServiceImpl(avroSchemaBuilder);
+    public static AvroDeSerService singleton(AvroSchemaBuilder avroSchemaBuilder) {
+        if (avroDeSerService == null) {
+            synchronized (lock) {
+                if (avroDeSerService == null) {
+                    avroDeSerService = new AvroDeSerServiceImpl(avroSchemaBuilder);
                 }
             }
         }
-        return classpathAvroDeSerService;
+        return avroDeSerService;
     }
 
 
-    private ClasspathAvroDeSerServiceImpl(AvroSchemaBuilder avroSchemaBuilder)
-    {
+    private AvroDeSerServiceImpl(AvroSchemaBuilder avroSchemaBuilder) {
         this.avroSchemaBuilder = avroSchemaBuilder;
     }
 
@@ -54,8 +49,7 @@ public class ClasspathAvroDeSerServiceImpl implements AvroDeSerService {
             GenericRecord genericRecord = reader.read(null, decoder);
 
             return genericRecord;
-        }catch (Exception e)
-        {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -74,9 +68,7 @@ public class ClasspathAvroDeSerServiceImpl implements AvroDeSerService {
             out.close();
 
             return avroBytes;
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
