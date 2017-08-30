@@ -1,10 +1,7 @@
 package io.shunters.coda;
 
 import io.shunters.coda.api.ProduceRequestTestSkip;
-import io.shunters.coda.api.service.AvroDeSerService;
-import io.shunters.coda.command.PutRequest;
-import io.shunters.coda.command.PutRequestTest;
-import io.shunters.coda.command.PutResponse;
+import io.shunters.coda.deser.AvroDeSer;
 import io.shunters.coda.protocol.ClientServerSpec;
 import io.shunters.coda.util.SingletonUtils;
 import io.shunters.coda.util.TimeUtils;
@@ -66,8 +63,8 @@ public class OldClientTestSkip {
             }
 
             GenericRecord produceRequest = new ProduceRequestTestSkip().buildProduceRequest();
-            AvroDeSerService avroDeSerService = SingletonUtils.getAvroDeSerServiceSingleton();
-            produceRequestAvroBytes = avroDeSerService.serialize(produceRequest);
+            AvroDeSer avroDeSer = SingletonUtils.getAvroDeSerSingleton();
+            produceRequestAvroBytes = avroDeSer.serialize(produceRequest);
         }
 
 

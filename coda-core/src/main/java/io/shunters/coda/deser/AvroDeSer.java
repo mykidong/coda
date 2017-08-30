@@ -1,6 +1,5 @@
-package io.shunters.coda.service;
+package io.shunters.coda.deser;
 
-import io.shunters.coda.api.service.AvroDeSerService;
 import io.shunters.coda.util.AvroSchemaBuilder;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -13,32 +12,31 @@ import java.io.ByteArrayOutputStream;
 /**
  * Created by mykidong on 2017-08-25.
  */
-public class AvroDeSerServiceImpl implements AvroDeSerService {
+public class AvroDeSer {
 
-    private static AvroDeSerService avroDeSerService;
+    private static AvroDeSer avroDeSer;
 
     private AvroSchemaBuilder avroSchemaBuilder;
 
     private static final Object lock = new Object();
 
-    public static AvroDeSerService singleton(AvroSchemaBuilder avroSchemaBuilder) {
-        if (avroDeSerService == null) {
+    public static AvroDeSer singleton(AvroSchemaBuilder avroSchemaBuilder) {
+        if (avroDeSer == null) {
             synchronized (lock) {
-                if (avroDeSerService == null) {
-                    avroDeSerService = new AvroDeSerServiceImpl(avroSchemaBuilder);
+                if (avroDeSer == null) {
+                    avroDeSer = new AvroDeSer(avroSchemaBuilder);
                 }
             }
         }
-        return avroDeSerService;
+        return avroDeSer;
     }
 
 
-    private AvroDeSerServiceImpl(AvroSchemaBuilder avroSchemaBuilder) {
+    private AvroDeSer(AvroSchemaBuilder avroSchemaBuilder) {
         this.avroSchemaBuilder = avroSchemaBuilder;
     }
 
 
-    @Override
     public GenericRecord deserialize(String schemaName, byte[] avroBytes) {
         Schema schema = this.avroSchemaBuilder.getSchema(schemaName);
 
@@ -54,7 +52,6 @@ public class AvroDeSerServiceImpl implements AvroDeSerService {
         }
     }
 
-    @Override
     public byte[] serialize(GenericRecord genericRecord) {
         Schema schema = genericRecord.getSchema();
         try {

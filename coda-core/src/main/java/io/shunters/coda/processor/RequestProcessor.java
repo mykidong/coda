@@ -2,7 +2,7 @@ package io.shunters.coda.processor;
 
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.dsl.Disruptor;
-import io.shunters.coda.api.service.AvroDeSerService;
+import io.shunters.coda.deser.AvroDeSer;
 import io.shunters.coda.protocol.ClientServerSpec;
 import io.shunters.coda.util.DisruptorBuilder;
 import io.shunters.coda.util.SingletonUtils;
@@ -20,9 +20,9 @@ public class RequestProcessor implements EventHandler<BaseMessage.RequestBytesEv
     private static Logger log = LoggerFactory.getLogger(RequestProcessor.class);
 
     /**
-     * avro de-/serialization service.
+     * avro de-/serialization.
      */
-    private static AvroDeSerService avroDeSerService = SingletonUtils.getAvroDeSerServiceSingleton();
+    private static AvroDeSer avroDeSer = SingletonUtils.getAvroDeSerSingleton();
 
     /**
      * request event disruptor.
@@ -81,7 +81,7 @@ public class RequestProcessor implements EventHandler<BaseMessage.RequestBytesEv
         String schemaName = SingletonUtils.getApiKeyAvroSchemaMapSingleton().getSchemaName(apiKey);
 
         // deserialize avro bytes message.
-        GenericRecord genericRecord = avroDeSerService.deserialize(schemaName, messsageBytes);
+        GenericRecord genericRecord = avroDeSer.deserialize(schemaName, messsageBytes);
 
 
         if (apiKey == ClientServerSpec.API_KEY_PRODUCE_REQUEST) {

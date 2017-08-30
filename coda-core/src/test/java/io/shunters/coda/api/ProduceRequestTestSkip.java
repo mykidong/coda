@@ -1,15 +1,11 @@
 package io.shunters.coda.api;
 
 import com.cedarsoftware.util.io.JsonWriter;
-import io.shunters.coda.api.service.AvroDeSerService;
-import io.shunters.coda.offset.TopicPartition;
-import io.shunters.coda.util.AvroSchemaBuilder;
+import io.shunters.coda.deser.AvroDeSer;
 import io.shunters.coda.util.SingletonUtils;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.util.Utf8;
-import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,24 +23,22 @@ public class ProduceRequestTestSkip extends BaseRequestTest {
     String schemaKey = "io.shunters.coda.avro.api.ProduceRequest";
 
     @Test
-    public void serialize()
-    {
+    public void serialize() {
         // produce request.
         GenericRecord produceRequest = this.buildProduceRequest();
 
-        AvroDeSerService avroDeSerService = SingletonUtils.getAvroDeSerServiceSingleton();
+        AvroDeSer avroDeSer = SingletonUtils.getAvroDeSerSingleton();
 
-        byte[] serializedAvro = avroDeSerService.serialize(produceRequest);
+        byte[] serializedAvro = avroDeSer.serialize(produceRequest);
 
 
-        GenericRecord deserializedAvro = avroDeSerService.deserialize(schemaKey, serializedAvro);
+        GenericRecord deserializedAvro = avroDeSer.deserialize(schemaKey, serializedAvro);
 
         log.info("deserializedAvro json: \n" + JsonWriter.formatJson(deserializedAvro.toString()));
     }
 
 
-    public GenericRecord buildProduceRequest()
-    {
+    public GenericRecord buildProduceRequest() {
         Schema schema = avroSchemaBuilder.getSchema(schemaKey);
 
         Schema produceRequestMessageArraySchema = schema.getField("produceRequestMessageArray").schema();
@@ -69,8 +63,7 @@ public class ProduceRequestTestSkip extends BaseRequestTest {
 
         // record array.
         GenericData.Array<GenericData.Record> recordArray = new GenericData.Array<GenericData.Record>(recordSize, recordArraySchema);
-        for(int i = 0; i < recordSize; i++)
-        {
+        for (int i = 0; i < recordSize; i++) {
             // record header.
             GenericData.Record recordHeader = new GenericData.Record(recordHeaderSchema);
             recordHeader.put("key", "header-key");
@@ -91,7 +84,6 @@ public class ProduceRequestTestSkip extends BaseRequestTest {
 
             recordArray.add(record);
         }
-
 
 
         // records.
@@ -140,20 +132,17 @@ public class ProduceRequestTestSkip extends BaseRequestTest {
 
 
     @Test
-    public void printGenericRecord()
-    {
+    public void printGenericRecord() {
         GenericRecord produceRequest = this.buildProduceRequest();
 
-        Collection<GenericRecord> produceRequestMessageArray = (Collection<GenericRecord>)produceRequest.get("produceRequestMessageArray");
+        Collection<GenericRecord> produceRequestMessageArray = (Collection<GenericRecord>) produceRequest.get("produceRequestMessageArray");
 
-        for(GenericRecord produceRequestMessage : produceRequestMessageArray)
-        {
-            String topicName = ((String)produceRequestMessage.get("topicName")).toString();
+        for (GenericRecord produceRequestMessage : produceRequestMessageArray) {
+            String topicName = ((String) produceRequestMessage.get("topicName")).toString();
 
             Collection<GenericRecord> produceRequestSubMessageArray = (Collection<GenericRecord>) produceRequestMessage.get("produceRequestSubMessageArray");
 
-            for(GenericRecord produceRequestSubMessage : produceRequestSubMessageArray)
-            {
+            for (GenericRecord produceRequestSubMessage : produceRequestSubMessageArray) {
                 int partition = (Integer) produceRequestSubMessage.get("partition");
 
                 // avro data records.

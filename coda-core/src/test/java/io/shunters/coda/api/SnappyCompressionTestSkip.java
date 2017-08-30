@@ -1,7 +1,6 @@
 package io.shunters.coda.api;
 
-import com.cedarsoftware.util.io.JsonWriter;
-import io.shunters.coda.api.service.AvroDeSerService;
+import io.shunters.coda.deser.AvroDeSer;
 import io.shunters.coda.util.SingletonUtils;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Test;
@@ -19,14 +18,13 @@ public class SnappyCompressionTestSkip extends BaseRequestTest {
     String schemaKey = "io.shunters.coda.avro.api.ProduceRequest";
 
     @Test
-    public void compressAvro() throws Exception
-    {
+    public void compressAvro() throws Exception {
         // produce request.
         GenericRecord produceRequest = new ProduceRequestTestSkip().buildProduceRequest();
 
-        AvroDeSerService avroDeSerService = SingletonUtils.getAvroDeSerServiceSingleton();
+        AvroDeSer avroDeSer = SingletonUtils.getAvroDeSerSingleton();
 
-        byte[] serializedAvro = avroDeSerService.serialize(produceRequest);
+        byte[] serializedAvro = avroDeSer.serialize(produceRequest);
         log.info("serializedAvro size: [" + serializedAvro.length + "]");
 
         // snappy compressed avro bytes.
@@ -39,7 +37,7 @@ public class SnappyCompressionTestSkip extends BaseRequestTest {
         log.info("uncompressedAvro size: [" + uncompressedAvro.length + "]");
 
 
-        GenericRecord deserializedAvro = avroDeSerService.deserialize(schemaKey, uncompressedAvro);
+        GenericRecord deserializedAvro = avroDeSer.deserialize(schemaKey, uncompressedAvro);
         //log.info("deserializedAvro json: \n" + JsonWriter.formatJson(deserializedAvro.toString()));
     }
 }
