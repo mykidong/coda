@@ -1,8 +1,5 @@
 package io.shunters.coda.store;
 
-import io.shunters.coda.message.MessageList;
-import io.shunters.coda.message.MessageOffset;
-import io.shunters.coda.offset.QueueShard;
 import io.shunters.coda.offset.TopicPartition;
 import org.apache.avro.generic.GenericRecord;
 import org.slf4j.Logger;
