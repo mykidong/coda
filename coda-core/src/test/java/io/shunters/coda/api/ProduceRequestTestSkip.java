@@ -79,7 +79,10 @@ public class ProduceRequestTestSkip extends BaseRequestTest {
             record.put("timestampDelta", 4);
             record.put("offsetDelta", i);
             record.put("key", ByteBuffer.wrap(new String("any-key" + i).getBytes()));
-            record.put("value", ByteBuffer.wrap(new String("any-record-value-" + i).getBytes()));
+
+            byte[] value = RecordValueGenerator.generateBytesWithString(100);
+
+            record.put("value", ByteBuffer.wrap(value));
             record.put("recordHeaders", recordHeaderArray);
 
             recordArray.add(record);

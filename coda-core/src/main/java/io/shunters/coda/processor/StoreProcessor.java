@@ -3,15 +3,11 @@ package io.shunters.coda.processor;
 import com.codahale.metrics.MetricRegistry;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.dsl.Disruptor;
-import io.shunters.coda.message.MessageList;
 import io.shunters.coda.metrics.MetricRegistryFactory;
 import io.shunters.coda.metrics.SystemOutMetricsReporter;
 import io.shunters.coda.offset.*;
 import io.shunters.coda.store.LogHandler;
-import io.shunters.coda.store.StoreHandler;
-import io.shunters.coda.store.StoreManager;
 import io.shunters.coda.util.DisruptorBuilder;
-import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.util.Utf8;
 import org.slf4j.Logger;
@@ -19,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Created by mykidong on 2016-09-03.

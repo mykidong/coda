@@ -8,6 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.Snappy;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 /**
  * Created by mykidong on 2017-08-29.
  */
@@ -39,5 +42,22 @@ public class SnappyCompressionTestSkip extends BaseRequestTest {
 
         GenericRecord deserializedAvro = avroDeSer.deserialize(schemaKey, uncompressedAvro);
         //log.info("deserializedAvro json: \n" + JsonWriter.formatJson(deserializedAvro.toString()));
+    }
+
+
+    @Test
+    public void validateSnappyCompression() throws Exception
+    {
+        byte[] input = RecordValueGenerator.generateBytesWithString(100);
+        byte[] output = new byte[Snappy.maxCompressedLength(input.length)];
+
+        int compressedSize = Snappy.compress(input, 0, input.length, output, 0);
+
+        assertTrue(Snappy.isValidCompressedBuffer(output, 0, compressedSize));
+
+        byte[] uncompressed = new byte[input.length];
+        int uncompressedSize = Snappy.uncompress(output, 0, compressedSize, uncompressed, 0);
+
+        assertEquals(input.length, uncompressedSize);
     }
 }

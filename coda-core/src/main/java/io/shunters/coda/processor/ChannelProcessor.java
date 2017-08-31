@@ -87,6 +87,8 @@ public class ChannelProcessor extends Thread {
                 }
             }
         } catch (IOException e) {
+            e.printStackTrace();
+
             throw new RuntimeException(e);
         }
     }

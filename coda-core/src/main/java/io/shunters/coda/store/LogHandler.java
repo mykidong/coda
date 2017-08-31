@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by mykidong on 2017-08-30.
@@ -26,6 +27,8 @@ public class LogHandler {
     private static final Object lock = new Object();
 
     private ConcurrentMap<TopicPartition, List<PartitionLog>> partitionLogMap;
+
+    private final ReentrantLock reentrantLock = new ReentrantLock();
 
     public static LogHandler singleton()
     {
@@ -82,14 +85,20 @@ public class LogHandler {
         if(partitionLogMap.containsKey(topicPartition))
         {
             partitionLog = partitionLogMap.get(topicPartition).get(this.getPartitionLogIndex(topicPartition, firstOffset));
-            partitionLog.add(firstOffset, records);
+
+            reentrantLock.lock();
+            try {
+                partitionLog.add(firstOffset, records);
+            }finally {
+                reentrantLock.unlock();
+            }
         }
         else
         {
             // TODO: base directory for segment and index to be configurable.
             long baseOffset = 1;
             OffsetIndex offsetIndex = new OffsetIndex(new File("/tmp/" + baseOffset + ".index"), baseOffset);
-            partitionLog = new PartitionLog(new File("/tmp/" + baseOffset + ".seg"), baseOffset, offsetIndex);
+            partitionLog = new PartitionLog(new File("/tmp/" + baseOffset + ".log"), baseOffset, offsetIndex);
             partitionLog.add(firstOffset, records);
 
             List<PartitionLog> partitionLogs = new ArrayList<>();

@@ -1,6 +1,5 @@
 package io.shunters.coda.util;
 
-import io.shunters.coda.store.StoreManager;
 import org.apache.avro.Schema;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;

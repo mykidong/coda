@@ -39,6 +39,12 @@ public class PartitionLog {
             if (!file.exists()) {
                 file.createNewFile();
             }
+            // TODO: IT IS JUST TEST PURPOSE, IT MUST BE REMOVED IN FUTURE.
+            else
+            {
+                file.delete();
+            }
+
             RandomAccessFile raf = new RandomAccessFile(file, "rw");
             fileChannel = raf.getChannel();
 
