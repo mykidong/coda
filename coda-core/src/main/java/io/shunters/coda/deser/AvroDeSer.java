@@ -31,6 +31,11 @@ public class AvroDeSer {
         return avroDeSer;
     }
 
+    public static AvroDeSer getAvroDeSerSingleton()
+    {
+        return AvroDeSer.singleton(AvroSchemaBuilder.singleton(AvroSchemaBuilder.DEFAULT_AVRO_SCHEMA_DIR_PATH));
+    }
+
 
     private AvroDeSer(AvroSchemaBuilder avroSchemaBuilder) {
         this.avroSchemaBuilder = avroSchemaBuilder;

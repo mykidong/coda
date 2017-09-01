@@ -1,28 +1,24 @@
 {
   "namespace":"io.shunters.coda.avro.api",
   "type":"record",
-  "doc":"Produce Request",
-  "name":"ProduceRequest",
+  "doc":"Produce Response",
+  "name":"ProduceResponse",
   "fields":[
     {
-      "name":"requestHeader",
-      "type":"io.shunters.coda.avro.api.RequestHeader"
+      "name":"responseHeader",
+      "type":"io.shunters.coda.avro.api.ResponseHeader"
     },
     {
-      "name":"requiredAcks",
+      "name":"throttleTime",
       "type":"int"
     },
     {
-      "name":"timeout",
-      "type":"int"
-    },
-    {
-      "name":"produceRequestMessageArray",
+      "name":"produceResponseMessageArray",
       "type":{
         "type":"array",
         "items":{
           "type":"record",
-          "name":"ProduceRequestMessage",
+          "name":"ProduceResponseMessage",
           "namespace":"io.shunters.coda.avro.api",
           "fields":[
             {
@@ -30,12 +26,12 @@
               "type":"string"
             },
             {
-              "name":"produceRequestSubMessageArray",
+              "name":"produceResponseSubMessageArray",
               "type":{
                 "type":"array",
                 "items":{
                   "type":"record",
-                  "name":"ProduceRequestSubMessage",
+                  "name":"ProduceResponseSubMessage",
                   "namespace":"io.shunters.coda.avro.api",
                   "fields":[
                     {
@@ -43,8 +39,16 @@
                       "type":"int"
                     },
                     {
-                      "name":"records",
-                      "type":"io.shunters.coda.avro.api.Records"
+                      "name":"errorCode",
+                      "type":"int"
+                    },
+                    {
+                      "name":"offset",
+                      "type":"long"
+                    },
+                    {
+                      "name":"timestamp",
+                      "type":"long"
                     }
                   ]
                 }
@@ -56,3 +60,4 @@
     }
   ]
 }
+

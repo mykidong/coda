@@ -2,7 +2,6 @@ package io.shunters.coda.api;
 
 import com.cedarsoftware.util.io.JsonWriter;
 import io.shunters.coda.deser.AvroDeSer;
-import io.shunters.coda.util.SingletonUtils;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
@@ -27,7 +26,7 @@ public class ProduceRequestTestSkip extends BaseRequestTest {
         // produce request.
         GenericRecord produceRequest = this.buildProduceRequest();
 
-        AvroDeSer avroDeSer = SingletonUtils.getAvroDeSerSingleton();
+        AvroDeSer avroDeSer = AvroDeSer.getAvroDeSerSingleton();
 
         byte[] serializedAvro = avroDeSer.serialize(produceRequest);
 
@@ -40,6 +39,8 @@ public class ProduceRequestTestSkip extends BaseRequestTest {
 
     public GenericRecord buildProduceRequest() {
         Schema schema = avroSchemaBuilder.getSchema(schemaKey);
+
+        Schema requestHeaderSchema = schema.getField("requestHeader").schema();
 
         Schema produceRequestMessageArraySchema = schema.getField("produceRequestMessageArray").schema();
 
@@ -124,8 +125,14 @@ public class ProduceRequestTestSkip extends BaseRequestTest {
         GenericData.Array<GenericData.Record> produceRequestMessageArray = new GenericData.Array<GenericData.Record>(1, produceRequestMessageArraySchema);
         produceRequestMessageArray.add(produceRequestMessage);
 
+        // RequestHeader.
+        GenericData.Record requestHeader = new GenericData.Record(requestHeaderSchema);
+        requestHeader.put("correlationId", 5);
+        requestHeader.put("clientId", "any-client-id");
+
         // produce request.
         GenericRecord produceRequest = new GenericData.Record(schema);
+        produceRequest.put("requestHeader", requestHeader);
         produceRequest.put("requiredAcks", 1);
         produceRequest.put("timeout", 1);
         produceRequest.put("produceRequestMessageArray", produceRequestMessageArray);
@@ -137,6 +144,7 @@ public class ProduceRequestTestSkip extends BaseRequestTest {
     @Test
     public void printGenericRecord() {
         GenericRecord produceRequest = this.buildProduceRequest();
+        log.info("produceRequest json: \n" + JsonWriter.formatJson(produceRequest.toString()));
 
         Collection<GenericRecord> produceRequestMessageArray = (Collection<GenericRecord>) produceRequest.get("produceRequestMessageArray");
 

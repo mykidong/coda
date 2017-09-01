@@ -1,7 +1,6 @@
 package io.shunters.coda.api;
 
 import io.shunters.coda.deser.AvroDeSer;
-import io.shunters.coda.util.SingletonUtils;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -25,7 +24,7 @@ public class SnappyCompressionTestSkip extends BaseRequestTest {
         // produce request.
         GenericRecord produceRequest = new ProduceRequestTestSkip().buildProduceRequest();
 
-        AvroDeSer avroDeSer = SingletonUtils.getAvroDeSerSingleton();
+        AvroDeSer avroDeSer = AvroDeSer.getAvroDeSerSingleton();
 
         byte[] serializedAvro = avroDeSer.serialize(produceRequest);
         log.info("serializedAvro size: [" + serializedAvro.length + "]");

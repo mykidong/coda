@@ -1,13 +1,16 @@
 package io.shunters.coda;
 
+import io.shunters.coda.api.BaseRequestTest;
 import io.shunters.coda.api.ProduceRequestTestSkip;
 import io.shunters.coda.deser.AvroDeSer;
+import io.shunters.coda.deser.MessageDeSer;
+import io.shunters.coda.protocol.ApiKeyAvroSchemaMap;
 import io.shunters.coda.protocol.ClientServerSpec;
-import io.shunters.coda.util.SingletonUtils;
 import io.shunters.coda.util.TimeUtils;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Test;
-import org.xerial.snappy.Snappy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -19,7 +22,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 /**
  * Created by mykidong on 2016-08-23.
  */
-public class OldClientTestSkip {
+public class OldClientTestSkip extends BaseRequestTest {
+
+    private static Logger log = LoggerFactory.getLogger(OldClientTestSkip.class);
 
     @Test
     public void run() throws Exception {
@@ -47,7 +52,13 @@ public class OldClientTestSkip {
         private String host;
         private int port;
 
-        private byte[] produceRequestAvroBytes;
+        private GenericRecord produceRequest;
+
+        private MessageDeSer messageDeSer;
+
+        private AvroDeSer avroDeSer;
+
+        private ApiKeyAvroSchemaMap apiKeyAvroSchemaMap;
 
         public ClientTask(String host, int port, long pause) {
             this.host = host;
@@ -62,9 +73,13 @@ public class OldClientTestSkip {
                 e.printStackTrace();
             }
 
-            GenericRecord produceRequest = new ProduceRequestTestSkip().buildProduceRequest();
-            AvroDeSer avroDeSer = SingletonUtils.getAvroDeSerSingleton();
-            produceRequestAvroBytes = avroDeSer.serialize(produceRequest);
+            produceRequest = new ProduceRequestTestSkip().buildProduceRequest();
+
+            this.messageDeSer = MessageDeSer.singleton();
+
+            this.avroDeSer = AvroDeSer.getAvroDeSerSingleton();
+
+            this.apiKeyAvroSchemaMap = ApiKeyAvroSchemaMap.getApiKeyAvroSchemaMapSingleton();
         }
 
 
@@ -72,40 +87,34 @@ public class OldClientTestSkip {
         public void run() {
             while (true) {
                 try {
-                    // snappy compressed avro bytes.
-                    byte[] snappyCompressedAvro = Snappy.compress(produceRequestAvroBytes);
-
-                    // ProduceRequest message.
-                    int totalSize = (2 + 2 + 1 + 1) + snappyCompressedAvro.length;
-
-                    ByteBuffer buffer = ByteBuffer.allocate(4 + totalSize);
-                    buffer.putInt(totalSize); // total size.
-                    buffer.putShort(ClientServerSpec.API_KEY_PRODUCE_REQUEST); // api key.
-                    buffer.putShort((short) 1); // api version.
-                    buffer.put(ClientServerSpec.MESSAGE_FORMAT_AVRO); // message format.
-                    buffer.put(ClientServerSpec.COMPRESSION_CODEC_SNAPPY);
-                    buffer.put(snappyCompressedAvro); // produce request avro bytes.
-
-                    buffer.rewind();
-
-                    byte[] produceRequestBytes = new byte[4 + totalSize];
-                    buffer.get(produceRequestBytes);
+                    byte[] produceRequestBytes = messageDeSer.serializeRequest(ClientServerSpec.API_KEY_PRODUCE_REQUEST,
+                            ClientServerSpec.API_VERSION_1,
+                            ClientServerSpec.COMPRESSION_CODEC_SNAPPY,
+                            produceRequest);
 
                     out.write(produceRequestBytes);
                     out.flush();
 
 
                     // Response.
-                    byte[] responseBytes = new byte["hello, I'm response!".length()];
+                    byte[] totalSizeBytes = new byte[4];
+                    in.read(totalSizeBytes);
+                    int totalSize = ByteBuffer.wrap(totalSizeBytes).getInt();
 
-                    in.read(responseBytes);
+                    byte[] responseMessageBytes = new byte[totalSize];
+                    in.read(responseMessageBytes);
 
-                    //System.out.println("response: [" + new String(responseBytes) + "]");
+                    GenericRecord responseRecord =
+                            messageDeSer.deserializeResponse(apiKeyAvroSchemaMap.getSchemaName(ClientServerSpec.API_KEY_PRODUCE_RESPONSE), totalSize, ByteBuffer.wrap(responseMessageBytes));
+
+                    //log.info("records json: \n" + JsonWriter.formatJson(responseRecord.toString()));
 
                     TimeUtils.pause(this.pause);
 
                 } catch (Exception e) {
                     e.printStackTrace();
+
+                    break;
                 }
             }
         }

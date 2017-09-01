@@ -23,4 +23,12 @@ public class ClientServerSpec {
     public static final short API_KEY_PRODUCE_REQUEST = 100;
     public static final String AVRO_SCHEMA_NAME_PRODUCE_REQUEST = "io.shunters.coda.avro.api.ProduceRequest";
 
+    public static final short API_KEY_PRODUCE_RESPONSE = 101;
+    public static final String AVRO_SCHEMA_NAME_PRODUCE_RESPONSE = "io.shunters.coda.avro.api.ProduceResponse";
+
+    /**
+     * api version
+     */
+    public static final byte API_VERSION_1 = 1;
+
 }

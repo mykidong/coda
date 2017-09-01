@@ -1,7 +1,6 @@
 package io.shunters.coda.store;
 
 import io.shunters.coda.deser.AvroDeSer;
-import io.shunters.coda.util.SingletonUtils;
 import org.apache.avro.generic.GenericRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +22,7 @@ public class PartitionLog {
     /**
      * avro de-/serialization.
      */
-    private static AvroDeSer avroDeSer = SingletonUtils.getAvroDeSerSingleton();
+    private static AvroDeSer avroDeSer = AvroDeSer.getAvroDeSerSingleton();
 
     private long baseOffset;
     private FileChannel fileChannel;

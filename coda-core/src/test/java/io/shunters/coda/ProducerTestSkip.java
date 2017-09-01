@@ -1,16 +1,16 @@
 package io.shunters.coda;
 
+import com.cedarsoftware.util.io.JsonWriter;
 import io.shunters.coda.api.ProduceRequestTestSkip;
-import io.shunters.coda.deser.AvroDeSer;
+import io.shunters.coda.deser.MessageDeSer;
+import io.shunters.coda.protocol.ApiKeyAvroSchemaMap;
 import io.shunters.coda.protocol.ClientServerSpec;
-import io.shunters.coda.util.SingletonUtils;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -29,7 +29,11 @@ public class ProducerTestSkip {
 
     private Selector selector;
 
-    private byte[] produceRequestAvroBytes;
+    private GenericRecord produceRequest;
+
+    private MessageDeSer messageDeSer;
+
+    private ApiKeyAvroSchemaMap apiKeyAvroSchemaMap;
 
     @Before
     public void init() throws Exception {
@@ -38,9 +42,9 @@ public class ProducerTestSkip {
 
         DOMConfigurator.configure(url);
 
-        GenericRecord produceRequest = new ProduceRequestTestSkip().buildProduceRequest();
-        AvroDeSer avroDeSer = SingletonUtils.getAvroDeSerSingleton();
-        produceRequestAvroBytes = avroDeSer.serialize(produceRequest);
+        produceRequest = new ProduceRequestTestSkip().buildProduceRequest();
+        messageDeSer = MessageDeSer.singleton();
+        apiKeyAvroSchemaMap = ApiKeyAvroSchemaMap.getApiKeyAvroSchemaMapSingleton();
     }
 
     @Test
@@ -98,25 +102,30 @@ public class ProducerTestSkip {
 
     private void readBytes(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
-//
-//        // to get total size.
-//        ByteBuffer totalSizeBuffer = ByteBuffer.allocate(4);
-//        socketChannel.read(totalSizeBuffer);
-//
-//        totalSizeBuffer.rewind();
-//
-//        // total size.
-//        int totalSize = totalSizeBuffer.getInt();
-//
-//        // subsequent bytes buffer.
-//        ByteBuffer buffer = ByteBuffer.allocate(totalSize);
-//        socketChannel.read(buffer);
-//
-//        buffer.rewind();
-//
-//        // TODO: ProduceRequest.
-//
-//
+
+        // to get total size.
+        ByteBuffer totalSizeBuffer = ByteBuffer.allocate(4);
+        socketChannel.read(totalSizeBuffer);
+
+        totalSizeBuffer.rewind();
+
+        // total size.
+        int totalSize = totalSizeBuffer.getInt();
+
+        // subsequent bytes buffer.
+        ByteBuffer buffer = ByteBuffer.allocate(totalSize);
+        socketChannel.read(buffer);
+
+        buffer.rewind();
+
+        // ProduceResponse.
+        GenericRecord responseRecord =
+                messageDeSer.deserializeResponse(apiKeyAvroSchemaMap.getSchemaName(ClientServerSpec.API_KEY_PRODUCE_RESPONSE), totalSize, buffer);
+
+        log.info("records json: \n" + JsonWriter.formatJson(responseRecord.toString()));
+
+
+
         // DO NOT SEND ANY MORE!
         // switch to write.
         socketChannel.register(this.selector, SelectionKey.OP_WRITE);
@@ -125,21 +134,12 @@ public class ProducerTestSkip {
     private void writeBytes(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
 
-        // snappy compressed avro bytes.
-        byte[] snappyCompressedAvro = Snappy.compress(produceRequestAvroBytes);
+        MessageDeSer.ByteBufferAndSize produceRequestBuffer = messageDeSer.serializeRequestToByteBuffer(ClientServerSpec.API_KEY_PRODUCE_REQUEST,
+                ClientServerSpec.API_VERSION_1,
+                ClientServerSpec.COMPRESSION_CODEC_SNAPPY,
+                produceRequest);
 
-        // ProduceRequest message.
-        int totalSize = (2 + 2 + 1 + 1) + snappyCompressedAvro.length;
-
-        ByteBuffer buffer = ByteBuffer.allocate(4 + totalSize);
-        buffer.putInt(totalSize); // total size.
-        buffer.putShort(ClientServerSpec.API_KEY_PRODUCE_REQUEST); // api key.
-        buffer.putShort((short) 1); // api version.
-        buffer.put(ClientServerSpec.MESSAGE_FORMAT_AVRO); // message format.
-        buffer.put(ClientServerSpec.COMPRESSION_CODEC_SNAPPY);
-        buffer.put(snappyCompressedAvro); // produce request avro bytes.
-
-        buffer.rewind();
+        ByteBuffer buffer = produceRequestBuffer.getByteBuffer();
 
         while (buffer.hasRemaining()) {
             socketChannel.write(buffer);

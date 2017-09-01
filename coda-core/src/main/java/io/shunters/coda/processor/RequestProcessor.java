@@ -3,9 +3,9 @@ package io.shunters.coda.processor;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.deser.AvroDeSer;
+import io.shunters.coda.protocol.ApiKeyAvroSchemaMap;
 import io.shunters.coda.protocol.ClientServerSpec;
 import io.shunters.coda.util.DisruptorBuilder;
-import io.shunters.coda.util.SingletonUtils;
 import org.apache.avro.generic.GenericRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +22,7 @@ public class RequestProcessor implements EventHandler<BaseMessage.RequestBytesEv
     /**
      * avro de-/serialization.
      */
-    private static AvroDeSer avroDeSer = SingletonUtils.getAvroDeSerSingleton();
+    private static AvroDeSer avroDeSer = AvroDeSer.getAvroDeSerSingleton();
 
     /**
      * request event disruptor.
@@ -75,10 +75,21 @@ public class RequestProcessor implements EventHandler<BaseMessage.RequestBytesEv
         ByteBuffer responseBuffer = null;
 
         short apiKey = requestBytesEvent.getApiKey();
+
+        short apiVersion = requestBytesEvent.getApiVersion();
+
+        // api version 1 is allowed.
+        if(apiVersion != ClientServerSpec.API_VERSION_1)
+        {
+            log.error("API Version [" + apiVersion + "] not allowed!");
+
+            return;
+        }
+
         byte[] messsageBytes = requestBytesEvent.getMessageBytes();
 
         // avro schema name.
-        String schemaName = SingletonUtils.getApiKeyAvroSchemaMapSingleton().getSchemaName(apiKey);
+        String schemaName = ApiKeyAvroSchemaMap.getApiKeyAvroSchemaMapSingleton().getSchemaName(apiKey);
 
         // deserialize avro bytes message.
         GenericRecord genericRecord = avroDeSer.deserialize(schemaName, messsageBytes);
