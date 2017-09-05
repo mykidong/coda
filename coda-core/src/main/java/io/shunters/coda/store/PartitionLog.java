@@ -1,6 +1,9 @@
 package io.shunters.coda.store;
 
+import com.cedarsoftware.util.io.JsonWriter;
 import io.shunters.coda.deser.AvroDeSer;
+import io.shunters.coda.protocol.ClientServerSpec;
+import jdk.nashorn.internal.ir.debug.JSONWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +13,9 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -23,6 +29,7 @@ public class PartitionLog {
      * avro de-/serialization.
      */
     private static AvroDeSer avroDeSer = AvroDeSer.getAvroDeSerSingleton();
+
 
     private long baseOffset;
     private FileChannel fileChannel;
@@ -39,8 +46,7 @@ public class PartitionLog {
                 file.createNewFile();
             }
             // TODO: IT IS JUST TEST PURPOSE, IT MUST BE REMOVED IN FUTURE.
-            else
-            {
+            else {
                 file.delete();
             }
 
@@ -67,7 +73,9 @@ public class PartitionLog {
     }
 
 
-    public void add(long firstOffset, GenericRecord records) {
+    public int add(long firstOffset, GenericRecord records) {
+        int errorCode = 0;
+
         lock.lock();
         try {
             int currentPosition = (int) size;
@@ -92,8 +100,86 @@ public class PartitionLog {
             size += avroBytes.length;
         } catch (IOException e) {
             e.printStackTrace();
+
+            // TODO: set errorCode if exception occurs.
         } finally {
             lock.unlock();
+        }
+
+        return errorCode;
+    }
+
+    public FetchRecord fetch(long fetchOffset, int maxBytes) {
+        int errorCode = 0;
+        long highwaterMarkOffset = 0; // TODO: set highwaterMarkOffset!
+
+        if (size == 0) {
+            return null;
+        }
+
+        int lengthSum = 0;
+
+        long currentOffset = fetchOffset;
+
+        List<GenericRecord> recordsList = new ArrayList<>();
+
+        while (lengthSum < maxBytes) {
+            OffsetIndex.OffsetPosition offsetPosition = offsetIndex.getFirstOffsetPosition(currentOffset);
+
+            if (offsetPosition == null) {
+                break;
+            }
+
+            int position = offsetPosition.getPosition();
+            int dataSize = offsetPosition.getDataSize();
+
+            lengthSum += dataSize;
+            if (maxBytes < lengthSum) {
+                break;
+            }
+
+            byte[] avroBytes = new byte[dataSize];
+
+            // TODO: it may cause to be memory-exhausting???
+            ByteBuffer buffer = getMMap(position, dataSize);
+            buffer.rewind();
+            buffer.get(avroBytes);
+
+            GenericRecord records = avroDeSer.deserialize(ClientServerSpec.AVRO_SCHEMA_NAME_RECORDS, avroBytes);
+            int recordSize = ((Collection<GenericRecord>) records.get("records")).size();
+
+            currentOffset += recordSize;
+
+            recordsList.add(records);
+        }
+
+
+        return new FetchRecord(errorCode, highwaterMarkOffset, recordsList);
+    }
+
+    public static class FetchRecord {
+        private int errorCode;
+
+        private long highwaterMarkOffset;
+
+        private List<GenericRecord> recordsList;
+
+        public FetchRecord(int errorCode, long highwaterMarkOffset, List<GenericRecord> recordsList) {
+            this.errorCode = errorCode;
+            this.highwaterMarkOffset = highwaterMarkOffset;
+            this.recordsList = recordsList;
+        }
+
+        public int getErrorCode() {
+            return errorCode;
+        }
+
+        public long getHighwaterMarkOffset() {
+            return highwaterMarkOffset;
+        }
+
+        public List<GenericRecord> getRecordsList() {
+            return recordsList;
         }
     }
 }

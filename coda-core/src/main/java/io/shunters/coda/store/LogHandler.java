@@ -77,18 +77,15 @@ public class LogHandler {
     }
 
 
-    public void add(TopicPartition topicPartition, long firstOffset, GenericRecord records) {
+    public int add(TopicPartition topicPartition, long firstOffset, GenericRecord records) {
+        int errorCode = 0;
+
         PartitionLog partitionLog = null;
         if(partitionLogMap.containsKey(topicPartition))
         {
             partitionLog = partitionLogMap.get(topicPartition).get(this.getPartitionLogIndex(topicPartition, firstOffset));
 
-            reentrantLock.lock();
-            try {
-                partitionLog.add(firstOffset, records);
-            }finally {
-                reentrantLock.unlock();
-            }
+            errorCode = partitionLog.add(firstOffset, records);
         }
         else
         {
@@ -96,12 +93,34 @@ public class LogHandler {
             long baseOffset = 1;
             OffsetIndex offsetIndex = new OffsetIndex(new File("/tmp/" + baseOffset + ".index"), baseOffset);
             partitionLog = new PartitionLog(new File("/tmp/" + baseOffset + ".log"), baseOffset, offsetIndex);
-            partitionLog.add(firstOffset, records);
+
+            errorCode = partitionLog.add(firstOffset, records);
 
             List<PartitionLog> partitionLogs = new ArrayList<>();
             partitionLogs.add(partitionLog);
 
             partitionLogMap.put(topicPartition, partitionLogs);
+        }
+
+        return errorCode;
+    }
+
+    public PartitionLog.FetchRecord fetch(TopicPartition topicPartition, long fetchOffset, int maxBytes)
+    {
+        PartitionLog partitionLog = null;
+
+        if(!partitionLogMap.containsKey(topicPartition))
+        {
+            log.error("topic [" + topicPartition.getTopic() + "] partition [" + topicPartition.getPartition() + "] not found!");
+
+            return null;
+        }
+        else {
+            int index = this.getPartitionLogIndex(topicPartition, fetchOffset);
+
+            partitionLog = partitionLogMap.get(topicPartition).get(this.getPartitionLogIndex(topicPartition, fetchOffset));
+
+            return partitionLog.fetch(fetchOffset, maxBytes);
         }
     }
 }

@@ -1,6 +1,5 @@
 package io.shunters.coda;
 
-import com.cedarsoftware.util.io.JsonWriter;
 import io.shunters.coda.api.BaseRequestTest;
 import io.shunters.coda.api.ProduceRequestTestSkip;
 import io.shunters.coda.deser.AvroDeSer;
@@ -23,9 +22,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 /**
  * Created by mykidong on 2016-08-23.
  */
-public class OldClientTestSkip extends BaseRequestTest {
+public class ProducerOldClientTestSkip extends BaseRequestTest {
 
-    private static Logger log = LoggerFactory.getLogger(OldClientTestSkip.class);
+    private static Logger log = LoggerFactory.getLogger(ProducerOldClientTestSkip.class);
 
     @Test
     public void run() throws Exception {
@@ -108,7 +107,7 @@ public class OldClientTestSkip extends BaseRequestTest {
                     GenericRecord responseRecord =
                             messageDeSer.deserializeResponse(apiKeyAvroSchemaMap.getSchemaName(ClientServerSpec.API_KEY_PRODUCE_RESPONSE), totalSize, ByteBuffer.wrap(responseMessageBytes));
 
-                    log.info("records json: \n" + JsonWriter.formatJson(responseRecord.toString()));
+                    //log.info("records json: \n" + JsonWriter.formatJson(responseRecord.toString()));
 
                     TimeUtils.pause(this.pause);
 

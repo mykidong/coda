@@ -43,8 +43,13 @@ public class ApiKeyAvroSchemaMap {
     {
         this.avroSchemaBuilder = avroSchemaBuilder;
 
+        // Produce.
         apiMap.put(ClientServerSpec.API_KEY_PRODUCE_REQUEST, ClientServerSpec.AVRO_SCHEMA_NAME_PRODUCE_REQUEST);
         apiMap.put(ClientServerSpec.API_KEY_PRODUCE_RESPONSE, ClientServerSpec.AVRO_SCHEMA_NAME_PRODUCE_RESPONSE);
+
+        // Fetch.
+        apiMap.put(ClientServerSpec.API_KEY_FETCH_REQUEST, ClientServerSpec.AVRO_SCHEMA_NAME_FETCH_REQUEST);
+        apiMap.put(ClientServerSpec.API_KEY_FETCH_RESPONSE, ClientServerSpec.AVRO_SCHEMA_NAME_FETCH_RESPONSE);
     }
 
 

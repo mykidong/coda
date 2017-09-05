@@ -47,8 +47,11 @@
                       "type":"long"
                     },
                     {
-                      "name":"records",
-                      "type":"io.shunters.coda.avro.api.Records"
+                      "name":"recordsArray",
+                      "type": {
+                        "type":"array",
+                        "items":"io.shunters.coda.avro.api.Records"
+                      }
                     }
                   ]
                 }
