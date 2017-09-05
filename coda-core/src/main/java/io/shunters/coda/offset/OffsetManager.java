@@ -43,11 +43,11 @@ public class OffsetManager implements OffsetHandler {
 
     @Override
     public long getCurrentOffsetAndIncrease(TopicPartition topicPartition, long size) {
-        long currentOffset = 0;
+        long currentOffset = 1;
         if (this.topicPartitionOffsetMap.containsKey(topicPartition)) {
             currentOffset = this.topicPartitionOffsetMap.get(topicPartition).getAndAdd(size);
         } else {
-            this.topicPartitionOffsetMap.put(topicPartition, new AtomicLong(size));
+            this.topicPartitionOffsetMap.put(topicPartition, new AtomicLong(size + 1));
         }
 
         return currentOffset;
@@ -61,6 +61,6 @@ public class OffsetManager implements OffsetHandler {
     private void loadOffset() {
         // TODO: load last offset from offset index files.
         long lastOffset = new OffsetIndex(new File("C:\\tmp\\1.index"), 1).getLastOffset();
-        this.topicPartitionOffsetMap.put(new TopicPartition("any-topic", 0), new AtomicLong(lastOffset));
+        this.topicPartitionOffsetMap.put(new TopicPartition("any-topic", 0), new AtomicLong(lastOffset + 1));
     }
 }
