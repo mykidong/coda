@@ -1,5 +1,6 @@
 package io.shunters.coda;
 
+import com.cedarsoftware.util.io.JsonWriter;
 import io.shunters.coda.api.BaseRequestTest;
 import io.shunters.coda.api.ProduceRequestTestSkip;
 import io.shunters.coda.deser.AvroDeSer;
@@ -107,7 +108,7 @@ public class OldClientTestSkip extends BaseRequestTest {
                     GenericRecord responseRecord =
                             messageDeSer.deserializeResponse(apiKeyAvroSchemaMap.getSchemaName(ClientServerSpec.API_KEY_PRODUCE_RESPONSE), totalSize, ByteBuffer.wrap(responseMessageBytes));
 
-                    //log.info("records json: \n" + JsonWriter.formatJson(responseRecord.toString()));
+                    log.info("records json: \n" + JsonWriter.formatJson(responseRecord.toString()));
 
                     TimeUtils.pause(this.pause);
 
