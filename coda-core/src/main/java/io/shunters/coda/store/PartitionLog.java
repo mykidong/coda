@@ -1,9 +1,7 @@
 package io.shunters.coda.store;
 
-import com.cedarsoftware.util.io.JsonWriter;
 import io.shunters.coda.deser.AvroDeSer;
 import io.shunters.coda.protocol.ClientServerSpec;
-import jdk.nashorn.internal.ir.debug.JSONWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
