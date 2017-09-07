@@ -16,5 +16,18 @@ public class YamlConfigHandlerTestSkip {
 
         List<String> dataDirs = (List<String>) configHandler.get(ConfigHandler.CONFIG_DATA_DIRS);
         System.out.println(dataDirs);
+
+        Object segmentMaxBytesObj = configHandler.get(ConfigHandler.CONFIG_DATA_SEGMENT_MAX_BYTES);
+        long segmentMaxBytes = 0L;
+        if(segmentMaxBytesObj instanceof Long)
+        {
+            segmentMaxBytes = (Long) segmentMaxBytesObj;
+        }
+        else if(segmentMaxBytesObj instanceof Integer)
+        {
+            segmentMaxBytes = ((Integer) segmentMaxBytesObj).longValue();
+        }
+
+        System.out.println(segmentMaxBytes);
     }
 }

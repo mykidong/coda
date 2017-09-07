@@ -3,6 +3,7 @@ package io.shunters.coda.store;
 import io.shunters.coda.deser.AvroDeSer;
 import io.shunters.coda.protocol.ClientServerSpec;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,11 +45,8 @@ public class PartitionLog {
 
         try {
             if (!file.exists()) {
+                FileUtils.forceMkdir(file.getParentFile());
                 file.createNewFile();
-            }
-            // TODO: IT IS JUST TEST PURPOSE, IT MUST BE REMOVED IN FUTURE.
-            else {
-                file.delete();
             }
 
             RandomAccessFile raf = new RandomAccessFile(file, "rw");
@@ -86,7 +84,7 @@ public class PartitionLog {
     }
 
 
-    public int add(long firstOffset, GenericRecord records) {
+    public int add(long firstOffset, GenericRecord records, int recordSize) {
         int errorCode = 0;
 
         lock.lock();
@@ -98,7 +96,7 @@ public class PartitionLog {
             int dataSize = avroBytes.length;
 
             // add offset position to offset index file.
-            offsetIndex.add(firstOffset, currentPosition, dataSize);
+            offsetIndex.add(firstOffset, currentPosition, dataSize, recordSize);
 
             fileChannel.position(currentPosition);
 

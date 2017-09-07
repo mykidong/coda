@@ -7,5 +7,4 @@ public interface OffsetHandler {
 
     public long getCurrentOffsetAndIncrease(TopicPartition topicPartition, long size);
 
-    public void updateOffset(TopicPartition topicPartition, long offset);
 }

@@ -1,10 +1,11 @@
 package io.shunters.coda.offset;
 
-import io.shunters.coda.store.OffsetIndex;
+import io.shunters.coda.store.LogHandler;
+import io.shunters.coda.store.PartitionLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -15,6 +16,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class OffsetManager implements OffsetHandler {
 
     private static Logger log = LoggerFactory.getLogger(OffsetManager.class);
+
+    private LogHandler logHandler;
 
     private static OffsetHandler offsetHandler;
 
@@ -36,6 +39,7 @@ public class OffsetManager implements OffsetHandler {
 
     private OffsetManager() {
         this.topicPartitionOffsetMap = new ConcurrentHashMap<>();
+        this.logHandler = LogHandler.singleton();
 
         loadOffset();
     }
@@ -53,14 +57,21 @@ public class OffsetManager implements OffsetHandler {
         return currentOffset;
     }
 
-    @Override
-    public void updateOffset(TopicPartition topicPartition, long offset) {
-        this.topicPartitionOffsetMap.put(topicPartition, new AtomicLong(offset));
-    }
 
     private void loadOffset() {
-        // TODO: load last offset from offset index files.
-        long lastOffset = new OffsetIndex(new File("C:\\tmp\\1.index"), 1).getLastOffset();
-        this.topicPartitionOffsetMap.put(new TopicPartition("any-topic", 0), new AtomicLong(lastOffset + 1));
+        ConcurrentMap<TopicPartition, List<PartitionLog>> partitionLogMap = logHandler.getPartitionLogMap();
+        for (TopicPartition topicPartition : partitionLogMap.keySet()) {
+            List<PartitionLog> partitionLogs = partitionLogMap.get(topicPartition);
+
+            long maxLastOffset = 0;
+            for (PartitionLog partitionLog : partitionLogs) {
+                long lastOffset = partitionLog.getOffsetIndex().getLastOffset();
+                if (maxLastOffset < lastOffset) {
+                    maxLastOffset = lastOffset;
+                }
+            }
+
+            this.topicPartitionOffsetMap.put(topicPartition, new AtomicLong(maxLastOffset + 1));
+        }
     }
 }

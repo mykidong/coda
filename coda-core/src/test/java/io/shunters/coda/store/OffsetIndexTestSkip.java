@@ -36,16 +36,16 @@ public class OffsetIndexTestSkip {
 
         OffsetIndex offsetIndex = new OffsetIndex(file, 500);
 
-        offsetIndex.add(550, 100, 30);
-        offsetIndex.add(560, 200, 30);
-        offsetIndex.add(570, 300, 30);
-        offsetIndex.add(580, 400, 30);
+        offsetIndex.add(550, 100, 30, 50);
+        offsetIndex.add(560, 200, 30, 50);
+        offsetIndex.add(570, 300, 30, 50);
+        offsetIndex.add(580, 400, 30, 50);
 
         OffsetIndex.OffsetPosition offsetPositionForFirstOffset = offsetIndex.getFirstOffsetPosition(560);
         Assert.assertTrue(offsetPositionForFirstOffset.getOffset() == 560);
         Assert.assertTrue(offsetPositionForFirstOffset.getPosition() == 200);
 
-        offsetIndex.add(565, 250, 30);
+        offsetIndex.add(565, 250, 30, 50);
         OffsetIndex.OffsetPosition offsetPositionForArbitaryOffset = offsetIndex.getFirstOffsetPosition(568);
         Assert.assertTrue(offsetPositionForArbitaryOffset.getOffset() == 565);
         Assert.assertTrue(offsetPositionForArbitaryOffset.getPosition() == 250);

@@ -74,7 +74,7 @@ public class ProduceRequestHandler extends AbstractRequestHandler {
 
                 records.put("firstOffset", firstOffset);
 
-                int errorCode = logHandler.add(topicPartition, firstOffset, records);
+                int errorCode = logHandler.add(topicPartition, firstOffset, records, recordSize);
 
                 this.metricRegistry.meter("StoreProcessor.save.records").mark(recordSize);
 
