@@ -1,5 +1,5 @@
 # coda log data directories.
-data.dirs: ["/tmp/coda-data1", "/tmp/coda-data2"]
+data.dirs: ["data/data1", "data/data2"]
 
 # maximum size of the log segment file.
 data.segment.maxBytes: 1073741824

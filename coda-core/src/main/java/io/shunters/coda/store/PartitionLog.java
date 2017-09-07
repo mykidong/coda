@@ -30,6 +30,7 @@ public class PartitionLog {
 
 
     private long baseOffset;
+    private File file;
     private FileChannel fileChannel;
     private OffsetIndex offsetIndex;
     private long size = 0;
@@ -37,8 +38,10 @@ public class PartitionLog {
     private final ReentrantLock lock = new ReentrantLock();
 
     public PartitionLog(File file, long baseOffset, OffsetIndex offsetIndex) {
+        this.file = file;
         this.baseOffset = baseOffset;
         this.offsetIndex = offsetIndex;
+
         try {
             if (!file.exists()) {
                 file.createNewFile();
@@ -58,8 +61,20 @@ public class PartitionLog {
         }
     }
 
+    public String getFilePath() {
+        return file.getAbsolutePath();
+    }
+
+    public OffsetIndex getOffsetIndex() {
+        return offsetIndex;
+    }
+
     public long getBaseOffset() {
         return baseOffset;
+    }
+
+    public long getSize() {
+        return this.size;
     }
 
     private ByteBuffer getMMap(int position, long length) {
@@ -153,6 +168,12 @@ public class PartitionLog {
 
 
         return new FetchRecord(errorCode, highwaterMarkOffset, recordsList);
+    }
+
+    @Override
+    public String toString()
+    {
+        return "log file: " + this.getFilePath() + ", index file: " + this.offsetIndex.getFilePath();
     }
 
     public static class FetchRecord {

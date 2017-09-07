@@ -22,12 +22,14 @@ public class OffsetIndex {
 
     private final ReentrantLock lock = new ReentrantLock();
 
+    private File file;
     private long baseOffset;
     private FileChannel fileChannel;
     private long size = 0;
     private long lastOffset = 0;
 
     public OffsetIndex(File file, long baseOffset) {
+        this.file = file;
         this.baseOffset = baseOffset;
         try {
             if (!file.exists()) {
@@ -50,6 +52,10 @@ public class OffsetIndex {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public String getFilePath() {
+        return file.getAbsolutePath();
     }
 
     public long getLastOffset() {
