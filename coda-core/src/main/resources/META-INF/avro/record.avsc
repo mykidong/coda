@@ -1,0 +1,38 @@
+{
+  "namespace":"io.shunters.coda.avro.api",
+  "type":"record",
+  "doc":"Record Data",
+  "name":"Record",
+  "fields":[
+    {
+      "name":"attributes",
+      "type":"int"
+    },
+    {
+      "name":"timestampDelta",
+      "type":"int"
+    },
+    {
+      "name":"offsetDelta",
+      "type":"int"
+    },
+    {
+      "name":"key",
+      "type":[
+        "bytes",
+        "null"
+      ]
+    },
+    {
+      "name":"value",
+      "type":"bytes"
+    },
+    {
+      "name":"recordHeaders",
+      "type":{
+        "type":"array",
+        "items":"io.shunters.coda.avro.api.RecordHeader"
+      }
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 package io.shunters.coda;
 
 import com.cedarsoftware.util.io.JsonWriter;
+import io.shunters.coda.api.FetchRequestTestSkip;
 import io.shunters.coda.api.ProduceRequestTestSkip;
 import io.shunters.coda.deser.MessageDeSer;
 import io.shunters.coda.protocol.ApiKeyAvroSchemaMap;
@@ -23,13 +24,13 @@ import java.util.Iterator;
 /**
  * Created by mykidong on 2016-08-23.
  */
-public class ProducerTestSkip {
+public class ConsumerTestSkip {
 
-    private static Logger log = LoggerFactory.getLogger(ProducerTestSkip.class);
+    private static Logger log = LoggerFactory.getLogger(ConsumerTestSkip.class);
 
     private Selector selector;
 
-    private GenericRecord produceRequest;
+    private GenericRecord fetchRequest;
 
     private MessageDeSer messageDeSer;
 
@@ -37,12 +38,13 @@ public class ProducerTestSkip {
 
     @Before
     public void init() throws Exception {
-        java.net.URL url = new ProducerTestSkip().getClass().getResource("/log4j-test.xml");
+        java.net.URL url = new ConsumerTestSkip().getClass().getResource("/log4j-test.xml");
         System.out.println("log4j url: " + url.toString());
 
         DOMConfigurator.configure(url);
 
-        produceRequest = new ProduceRequestTestSkip().buildProduceRequest();
+        fetchRequest = new FetchRequestTestSkip().buildFetchRequest(1, 40000);
+
         messageDeSer = MessageDeSer.singleton();
         apiKeyAvroSchemaMap = ApiKeyAvroSchemaMap.getApiKeyAvroSchemaMapSingleton();
     }
@@ -120,9 +122,9 @@ public class ProducerTestSkip {
 
         // ProduceResponse.
         GenericRecord responseRecord =
-                messageDeSer.deserializeResponse(apiKeyAvroSchemaMap.getSchemaName(ClientServerSpec.API_KEY_PRODUCE_RESPONSE), totalSize, buffer);
+                messageDeSer.deserializeResponse(apiKeyAvroSchemaMap.getSchemaName(ClientServerSpec.API_KEY_FETCH_RESPONSE), totalSize, buffer);
 
-        //log.info("records json: \n" + JsonWriter.formatJson(responseRecord.toString()));
+        log.info("records json: \n" + JsonWriter.formatJson(responseRecord.toString()));
 
 
 
@@ -134,12 +136,12 @@ public class ProducerTestSkip {
     private void writeBytes(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
 
-        MessageDeSer.ByteBufferAndSize produceRequestBuffer = messageDeSer.serializeRequestToByteBuffer(ClientServerSpec.API_KEY_PRODUCE_REQUEST,
+        MessageDeSer.ByteBufferAndSize fetchRequestBuffer = messageDeSer.serializeRequestToByteBuffer(ClientServerSpec.API_KEY_FETCH_REQUEST,
                 ClientServerSpec.API_VERSION_1,
                 ClientServerSpec.COMPRESSION_CODEC_SNAPPY,
-                produceRequest);
+                fetchRequest);
 
-        ByteBuffer buffer = produceRequestBuffer.getByteBuffer();
+        ByteBuffer buffer = fetchRequestBuffer.getByteBuffer();
 
         while (buffer.hasRemaining()) {
             socketChannel.write(buffer);

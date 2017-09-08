@@ -5,7 +5,6 @@ package io.shunters.coda.offset;
  */
 public interface OffsetHandler {
 
-    public long getCurrentOffsetAndIncrease(QueueShard queueShard, long size);
+    public long getCurrentOffsetAndIncrease(TopicPartition topicPartition, long size);
 
-    public void updateOffset(QueueShard queueShard, long offset);
 }

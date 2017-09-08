@@ -1,9 +1,12 @@
 package io.shunters.coda.processor;
 
 import com.codahale.metrics.MetricRegistry;
-import io.shunters.coda.command.RequestByteBuffer;
+import com.lmax.disruptor.dsl.Disruptor;
+import io.shunters.coda.protocol.ClientServerSpec;
+import io.shunters.coda.util.DisruptorBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -24,7 +27,16 @@ public class ChannelProcessor extends Thread {
 
     private MetricRegistry metricRegistry;
 
-    private ToRequestProcessor toRequestProcessor;
+    /**
+     * request bytes event disruptor.
+     */
+    private Disruptor<BaseMessage.RequestBytesEvent> requestBytesEventDisruptor;
+
+    /**
+     * request bytes event translator.
+     */
+    private BaseMessage.RequestBytesEventTranslator requestBytesEventTranslator;
+
 
     public ChannelProcessor(MetricRegistry metricRegistry) {
         this.metricRegistry = metricRegistry;
@@ -32,8 +44,8 @@ public class ChannelProcessor extends Thread {
         this.queue = new LinkedBlockingQueue<>();
         this.nioSelector = NioSelector.open();
 
-        this.toRequestProcessor = new ToRequestProcessor();
-        this.toRequestProcessor.start();
+        requestBytesEventDisruptor = DisruptorBuilder.singleton("RequestProcessor", BaseMessage.RequestBytesEvent.FACTORY, 1024, RequestProcessor.singleton());
+        this.requestBytesEventTranslator = new BaseMessage.RequestBytesEventTranslator();
     }
 
     public void put(SocketChannel socketChannel) {
@@ -69,14 +81,14 @@ public class ChannelProcessor extends Thread {
 
                     if (key.isReadable()) {
                         this.request(key);
-                    }
-                    else if(key.isWritable())
-                    {
+                    } else if (key.isWritable()) {
                         this.response(key);
                     }
                 }
             }
         } catch (IOException e) {
+            e.printStackTrace();
+
             throw new RuntimeException(e);
         }
     }
@@ -89,31 +101,57 @@ public class ChannelProcessor extends Thread {
         // channel id.
         String channelId = NioSelector.makeChannelId(socketChannel);
 
-        // to get total size.
+        // total size.
         ByteBuffer totalSizeBuffer = ByteBuffer.allocate(4);
         socketChannel.read(totalSizeBuffer);
-
         totalSizeBuffer.rewind();
 
-        // total size.
         int totalSize = totalSizeBuffer.getInt();
 
-        // subsequent bytes buffer.
         ByteBuffer buffer = ByteBuffer.allocate(totalSize);
         socketChannel.read(buffer);
-
-
         buffer.rewind();
 
-        // command id.
-        short commandId = buffer.getShort();
+        // api key
+        short apiKey = buffer.getShort();
 
-        buffer.rewind();
+        // api version.
+        short apiVersion = buffer.getShort();
 
-        RequestByteBuffer requestByteBuffer = new RequestByteBuffer(this.nioSelector, channelId, commandId, buffer);
+        // messsage format.
+        byte messageFormat = buffer.get();
 
-        // send to ToRequestProcessor.
-        this.toRequestProcessor.put(requestByteBuffer);
+        // TODO: just avro message format is allowed.
+        //       another formats like protocol buffers, etc. should be supported in future.
+        if (messageFormat != ClientServerSpec.MESSAGE_FORMAT_AVRO) {
+            log.error("Not Avro Message Format!");
+
+            return;
+        }
+
+        // compression codec.
+        byte compressionCodec = buffer.get();
+
+        // message bytes.
+        byte[] messsageBytes = new byte[totalSize - (2 + 2 + 1 + 1)];
+        buffer.get(messsageBytes);
+
+        // if avro bytes is coompressed by snappy, uncompress them.
+        if(compressionCodec == ClientServerSpec.COMPRESSION_CODEC_SNAPPY)
+        {
+            messsageBytes = Snappy.uncompress(messsageBytes);
+        }
+
+        // construct disruptor translator.
+        this.requestBytesEventTranslator.setChannelId(channelId);
+        this.requestBytesEventTranslator.setNioSelector(this.nioSelector);
+        this.requestBytesEventTranslator.setApiKey(apiKey);
+        this.requestBytesEventTranslator.setApiVersion(apiVersion);
+        this.requestBytesEventTranslator.setMessageFormat(messageFormat);
+        this.requestBytesEventTranslator.setMessageBytes(messsageBytes);
+
+        // produce request bytes event to disruptor.
+        this.requestBytesEventDisruptor.publishEvent(this.requestBytesEventTranslator);
 
         this.metricRegistry.meter("ChannelProcessor.read").mark();
     }
@@ -123,8 +161,7 @@ public class ChannelProcessor extends Thread {
 
         ByteBuffer buffer = (ByteBuffer) key.attachment();
 
-        if(buffer == null)
-        {
+        if (buffer == null) {
             return;
         }
 
