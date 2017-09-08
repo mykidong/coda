@@ -183,8 +183,9 @@ public class LogHandler {
                 // random selected data dir in which segment file will be created.
                 String selectedDataDir = dataDirs.get(random.nextInt(dataDirs.size()));
 
-                errorCode = createNewPartitionLogFile(topicPartition, firstOffset, records, recordSize, partitionLogs, partitionLogMap, selectedDataDir);
+                errorCode = createNewPartitionLogFileAndSaveRecords(topicPartition, firstOffset, records, recordSize, partitionLogs, partitionLogMap, selectedDataDir);
             } else {
+                // save records.
                 errorCode = partitionLog.add(firstOffset, records, recordSize);
             }
         }
@@ -193,13 +194,13 @@ public class LogHandler {
             String firstDataDir = dataDirs.get(0);
             List<PartitionLog> partitionLogs = new ArrayList<>();
 
-            errorCode = createNewPartitionLogFile(topicPartition, firstOffset, records, recordSize, partitionLogs, partitionLogMap, firstDataDir);
+            errorCode = createNewPartitionLogFileAndSaveRecords(topicPartition, firstOffset, records, recordSize, partitionLogs, partitionLogMap, firstDataDir);
         }
 
         return errorCode;
     }
 
-    private int createNewPartitionLogFile(TopicPartition topicPartition,
+    private int createNewPartitionLogFileAndSaveRecords(TopicPartition topicPartition,
                                           long firstOffset,
                                           GenericRecord records,
                                           int recordSize,
@@ -218,6 +219,7 @@ public class LogHandler {
         OffsetIndex offsetIndex = new OffsetIndex(new File(indexFilePath), firstOffset);
         PartitionLog partitionLog = new PartitionLog(new File(logFilePath), firstOffset, offsetIndex);
 
+        // save records.
         errorCode = partitionLog.add(firstOffset, records, recordSize);
 
         partitionLogs.add(partitionLog);
