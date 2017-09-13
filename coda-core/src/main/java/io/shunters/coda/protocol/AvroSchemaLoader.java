@@ -1,4 +1,4 @@
-package io.shunters.coda.util;
+package io.shunters.coda.protocol;
 
 import org.apache.avro.Schema;
 import org.apache.commons.io.Charsets;
@@ -17,9 +17,9 @@ import java.util.Map;
 /**
  * Created by mykidong on 2017-08-24.
  */
-public class AvroSchemaBuilder {
+public class AvroSchemaLoader {
 
-    private static Logger log = LoggerFactory.getLogger(AvroSchemaBuilder.class);
+    private static Logger log = LoggerFactory.getLogger(AvroSchemaLoader.class);
 
     public static final String DEFAULT_AVRO_SCHEMA_DIR_PATH = "/META-INF/avro";
 
@@ -27,40 +27,40 @@ public class AvroSchemaBuilder {
 
     private static final Object lock = new Object();
 
-    private static AvroSchemaBuilder avroSchemaBuilder;
+    private static AvroSchemaLoader avroSchemaLoader;
 
-    public static AvroSchemaBuilder singleton(String pathDir)
+    public static AvroSchemaLoader singleton(String pathDir)
     {
-        if(avroSchemaBuilder == null)
+        if(avroSchemaLoader == null)
         {
             synchronized (lock)
             {
-                if(avroSchemaBuilder == null)
+                if(avroSchemaLoader == null)
                 {
-                    avroSchemaBuilder = new AvroSchemaBuilder(pathDir);
+                    avroSchemaLoader = new AvroSchemaLoader(pathDir);
                 }
             }
         }
-        return avroSchemaBuilder;
+        return avroSchemaLoader;
     }
 
-    public static AvroSchemaBuilder singletonForSchemaPaths(String... schemaPaths)
+    public static AvroSchemaLoader singletonForSchemaPaths(String... schemaPaths)
     {
-        if(avroSchemaBuilder == null)
+        if(avroSchemaLoader == null)
         {
             synchronized (lock)
             {
-                if(avroSchemaBuilder == null)
+                if(avroSchemaLoader == null)
                 {
-                    avroSchemaBuilder = new AvroSchemaBuilder(schemaPaths);
+                    avroSchemaLoader = new AvroSchemaLoader(schemaPaths);
                 }
             }
         }
-        return avroSchemaBuilder;
+        return avroSchemaLoader;
     }
 
 
-    private AvroSchemaBuilder(String... schemaPaths) {
+    private AvroSchemaLoader(String... schemaPaths) {
 
         List<String> jsonList = new ArrayList<>();
         for (String schemaPath : schemaPaths) {
@@ -72,7 +72,7 @@ public class AvroSchemaBuilder {
         resolveSchemaRepeatedly(jsonList);
     }
 
-    private AvroSchemaBuilder(String pathDir)
+    private AvroSchemaLoader(String pathDir)
     {
         try {
             List<String> files = IOUtils.readLines(this.getClass().getResourceAsStream(pathDir), Charsets.UTF_8);
