@@ -25,7 +25,9 @@ public class ServerTestSkip {
     @Test
     public void run() throws Exception
     {
-        CodaServer broker = new CodaServer(9911, 4);
+        int port = Integer.valueOf(System.getProperty("port", "9911"));
+
+        CodaServer broker = new CodaServer(port, 4);
         Thread t = new Thread(broker);
         t.start();
 
