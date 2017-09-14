@@ -2,6 +2,7 @@ package io.shunters.coda.server;
 
 import com.codahale.metrics.MetricRegistry;
 import io.shunters.coda.discovery.ConsulServiceDiscovery;
+import io.shunters.coda.discovery.ConsulSessionHolder;
 import io.shunters.coda.discovery.ServiceDiscovery;
 import io.shunters.coda.metrics.MetricRegistryFactory;
 import io.shunters.coda.metrics.MetricsReporter;
@@ -26,7 +27,7 @@ import java.util.Random;
 /**
  * Created by mykidong on 2016-08-23.
  */
-public class CodaServer implements Runnable{
+public class CodaServer implements Runnable {
 
     private static Logger log = LoggerFactory.getLogger(CodaServer.class);
 
@@ -45,8 +46,6 @@ public class CodaServer implements Runnable{
     private Random random = new Random();
 
     private ServiceDiscovery serviceDiscovery;
-
-    public static final String CONSUL_SERVICE_NAME = "coda";
 
     public CodaServer(int port, int channelProcessorSize) {
 
@@ -67,26 +66,27 @@ public class CodaServer implements Runnable{
         metricsReporter.start();
 
         channelProcessors = new ArrayList<>();
-        for(int i = 0; i < channelProcessorSize; i++)
-        {
+        for (int i = 0; i < channelProcessorSize; i++) {
             ChannelProcessor channelProcessor = new ChannelProcessor(this.metricRegistry);
             channelProcessor.start();
 
             channelProcessors.add(channelProcessor);
         }
 
-        // create service to consul.
+        // register service onto consul.
         String hostName = NetworkUtils.getSimpleHostName();
         String hostPort = hostName + ":" + port;
         String serviceId = hostName + "-" + port;
 
         this.serviceDiscovery = ConsulServiceDiscovery.getConsulServiceDiscovery();
-        serviceDiscovery.createService(CONSUL_SERVICE_NAME, serviceId, null, hostName, port, null, hostPort, "10s", "1s");
-        log.info("consul service [" + CONSUL_SERVICE_NAME + ":" + serviceId + "] registered.");
+        serviceDiscovery.createService(ServiceDiscovery.SERVICE_NAME, serviceId, null, hostName, port, null, hostPort, "10s", "1s");
+        log.info("consul service [" + ServiceDiscovery.SERVICE_NAME + ":" + serviceId + "] registered.");
+
+        // run consul session holder to elect leader.
+        new ConsulSessionHolder(ServiceDiscovery.SESSION_CODA_LOCK, ServiceDiscovery.LEADER_KEY, hostName, port, 10);
     }
 
-    private ChannelProcessor getNextChannelProcessor()
-    {
+    private ChannelProcessor getNextChannelProcessor() {
         int randomIndex = random.nextInt(this.channelProcessorSize);
 
         return this.channelProcessors.get(randomIndex);
@@ -94,7 +94,7 @@ public class CodaServer implements Runnable{
 
 
     @Override
-    public void run()  {
+    public void run() {
         try {
             this.selector = Selector.open();
 
@@ -128,8 +128,7 @@ public class CodaServer implements Runnable{
                     }
                 }
             }
-        }catch (IOException e)
-        {
+        } catch (IOException e) {
             log.error(e.getMessage());
             throw new RuntimeException(e);
         }

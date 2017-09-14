@@ -10,6 +10,7 @@ import com.ecwid.consul.v1.kv.model.PutParams;
 import com.ecwid.consul.v1.session.SessionClient;
 import com.ecwid.consul.v1.session.SessionConsulClient;
 import com.ecwid.consul.v1.session.model.NewSession;
+import com.ecwid.consul.v1.session.model.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -209,6 +210,12 @@ public class ConsulServiceDiscovery implements ServiceDiscovery {
     @Override
     public void destroySession(String session) {
         this.sessionClient.sessionDestroy(session, QueryParams.DEFAULT);
+    }
+
+    @Override
+    public void renewSession(String session)
+    {
+        this.sessionClient.renewSession(session, QueryParams.DEFAULT);
     }
 
     @Override

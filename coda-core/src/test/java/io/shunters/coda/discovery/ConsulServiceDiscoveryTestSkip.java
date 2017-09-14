@@ -16,7 +16,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class ConsulServiceDiscoveryTestSkip {
 
     private ServiceDiscovery serviceDiscovery;
-    private String key = "service/" + CodaServer.CONSUL_SERVICE_NAME + "/leader";
+    private String key = "service/" + ServiceDiscovery.SERVICE_NAME + "/leader";
 
     @Before
     public void init() {
@@ -85,7 +85,7 @@ public class ConsulServiceDiscoveryTestSkip {
 
     @Test
     public void getHealthService() {
-        List<ServiceDiscovery.HostPort> healthServiceList = this.serviceDiscovery.getHealthServices(CodaServer.CONSUL_SERVICE_NAME);
+        List<ServiceDiscovery.HostPort> healthServiceList = this.serviceDiscovery.getHealthServices(ServiceDiscovery.SERVICE_NAME);
 
         healthServiceList.stream().forEach(h -> System.out.printf("health service host: %s, port: %d\n", h.getHost(), h.getPort()));
     }
