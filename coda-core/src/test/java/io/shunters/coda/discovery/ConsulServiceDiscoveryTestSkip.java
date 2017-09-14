@@ -4,6 +4,7 @@ import io.shunters.coda.server.CodaServer;
 import io.shunters.coda.util.NetworkUtils;
 import org.junit.Before;
 import org.junit.Test;
+import sun.nio.ch.Net;
 
 import java.util.List;
 import java.util.Map;
@@ -59,9 +60,9 @@ public class ConsulServiceDiscoveryTestSkip {
 
         @Override
         public void run() {
-            String serviceId = hostIp + "-" + port;
+            String hostName = NetworkUtils.getHostName();
 
-            String session = serviceDiscovery.createSession("coda-lock", serviceId,"10s", 10);
+            String session = serviceDiscovery.createSession("coda-lock", hostName,"10s", 10);
             System.out.printf("session: %s\n", session);
 
             String nodeDescription = this.hostIp + ":" + this.port;
