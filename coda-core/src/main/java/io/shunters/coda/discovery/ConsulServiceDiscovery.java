@@ -158,10 +158,9 @@ public class ConsulServiceDiscovery implements ServiceDiscovery {
     }
 
     @Override
-    public String createSession(String name, String node, String ttl, long lockDelay) {
+    public String createSession(String name, String ttl, long lockDelay) {
         NewSession newSession = new NewSession();
         newSession.setName(name);
-        newSession.setNode(node);
         newSession.setTtl(ttl);
         newSession.setLockDelay(lockDelay);
 
