@@ -1,10 +1,13 @@
 package io.shunters.coda.server;
 
 import com.codahale.metrics.MetricRegistry;
+import io.shunters.coda.discovery.ConsulServiceDiscovery;
+import io.shunters.coda.discovery.ServiceDiscovery;
 import io.shunters.coda.metrics.MetricRegistryFactory;
 import io.shunters.coda.metrics.MetricsReporter;
 import io.shunters.coda.metrics.SystemOutMetricsReporter;
 import io.shunters.coda.processor.ChannelProcessor;
+import io.shunters.coda.util.NetworkUtils;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +44,10 @@ public class CodaServer implements Runnable{
 
     private Random random = new Random();
 
+    private ServiceDiscovery serviceDiscovery;
+
+    public static final String CONSUL_SERVICE_NAME = "coda";
+
     public CodaServer(int port, int channelProcessorSize) {
 
         // TODO: log4j init. should be configurable.
@@ -67,6 +74,15 @@ public class CodaServer implements Runnable{
 
             channelProcessors.add(channelProcessor);
         }
+
+        // create service to consul.
+        String nodeIp = NetworkUtils.getHostIp();
+        String hostPort = nodeIp + ":" + port;
+        String serviceId = nodeIp + "-" + port;
+
+        this.serviceDiscovery = ConsulServiceDiscovery.getConsulServiceDiscovery();
+        serviceDiscovery.createService(CONSUL_SERVICE_NAME, serviceId, null, nodeIp, port, null, hostPort, "10s", "1s");
+        log.info("consul service [" + CONSUL_SERVICE_NAME + ":" + serviceId + "] registered.");
     }
 
     private ChannelProcessor getNextChannelProcessor()
