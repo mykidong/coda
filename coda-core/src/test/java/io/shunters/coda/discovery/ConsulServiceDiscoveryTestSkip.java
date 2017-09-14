@@ -16,6 +16,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class ConsulServiceDiscoveryTestSkip {
 
     private ServiceDiscovery serviceDiscovery;
+    private String key = "service/" + CodaServer.CONSUL_SERVICE_NAME + "/leader";
 
     @Before
     public void init()
@@ -25,13 +26,11 @@ public class ConsulServiceDiscoveryTestSkip {
 
 
     @Test
-    public void electLeader() throws Exception {
-        // before electing leader, make sure that ServerTestSkip is run with
+    public void createSession() throws Exception {
+        // before creating session, make sure that ServerTestSkip is run with
         // mvn -e -Dtest=ServerTestSkip -Dport=9911 test;
         // mvn -e -Dtest=ServerTestSkip -Dport=9912 test;
         // mvn -e -Dtest=ServerTestSkip -Dport=9913 test;
-
-        String key = "service/" + CodaServer.CONSUL_SERVICE_NAME + "/leader";
 
         ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(3);
 
@@ -43,14 +42,6 @@ public class ConsulServiceDiscoveryTestSkip {
         }
 
         Thread.sleep(Long.MAX_VALUE);
-
-
-        // elect leader.
-        Map<String, String> leaderMap = serviceDiscovery.getKVValues(key);
-        for (String k : leaderMap.keySet()) {
-            String value = leaderMap.get(k);
-            System.out.println("leader: " + value);
-        }
     }
 
     private static class ServiceDiscoveryTask implements Runnable {
@@ -74,6 +65,17 @@ public class ConsulServiceDiscoveryTestSkip {
             boolean lockAcquired = serviceDiscovery.acquireLock(key, nodeDescription, session);
 
             System.out.printf("node desc: %s, lock acquired: %s\n", nodeDescription, String.valueOf(lockAcquired));
+        }
+    }
+
+    @Test
+    public void getLeader()
+    {
+        // get leader.
+        Map<String, String> leaderMap = serviceDiscovery.getKVValues(key);
+        for (String k : leaderMap.keySet()) {
+            String value = leaderMap.get(k);
+            System.out.println("leader: " + value);
         }
     }
 
