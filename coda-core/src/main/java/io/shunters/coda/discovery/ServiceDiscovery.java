@@ -14,6 +14,8 @@ public interface ServiceDiscovery {
 
     Map<String, String> getKVValues(String keyPath);
 
+    Map<String, String> getLeader(String keyPath);
+
     void setKVValue(String key, String value);
 
     String createSession(String name, String node, String ttl, long lockDelay);

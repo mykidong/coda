@@ -71,10 +71,15 @@ public class ConsulServiceDiscoveryTestSkip {
     @Test
     public void getLeader() {
         // get leader.
-        Map<String, String> leaderMap = serviceDiscovery.getKVValues(key);
-        for (String k : leaderMap.keySet()) {
-            String value = leaderMap.get(k);
-            System.out.println("leader: " + value);
+        Map<String, String> leaderMap = serviceDiscovery.getLeader(key);
+        if(leaderMap != null) {
+            for (String k : leaderMap.keySet()) {
+                String value = leaderMap.get(k);
+                System.out.println("leader: " + value);
+            }
+        }else
+        {
+            System.out.println("leader not found!");
         }
     }
 

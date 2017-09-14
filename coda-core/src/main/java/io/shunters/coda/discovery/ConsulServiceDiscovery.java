@@ -152,6 +152,42 @@ public class ConsulServiceDiscovery implements ServiceDiscovery {
     }
 
     @Override
+    public Map<String, String> getLeader(String keyPath) {
+        Response<List<GetValue>> valueResponse = client.getKVValues(keyPath);
+
+        List<GetValue> getValues = valueResponse.getValue();
+
+        if (getValues == null) {
+            return null;
+        }
+
+        Map<String, String> map = null;
+
+        int count = 0;
+        for (GetValue v : getValues) {
+            if (v == null || v.getValue() == null || v.getSession() == null) {
+                continue;
+            }
+
+            if(count == 0)
+            {
+                map = new HashMap<>();
+            }
+
+            String key = v.getKey();
+
+            String value = v.getDecodedValue();
+
+            map.put(key, value);
+
+            count++;
+        }
+
+        return map;
+    }
+
+
+    @Override
     public void setKVValue(String key, String value) {
 
         client.setKVValue(key, value);
