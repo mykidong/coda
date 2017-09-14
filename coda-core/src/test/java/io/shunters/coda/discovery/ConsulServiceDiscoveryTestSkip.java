@@ -4,7 +4,6 @@ import io.shunters.coda.server.CodaServer;
 import io.shunters.coda.util.NetworkUtils;
 import org.junit.Before;
 import org.junit.Test;
-import sun.nio.ch.Net;
 
 import java.util.List;
 import java.util.Map;
@@ -20,8 +19,7 @@ public class ConsulServiceDiscoveryTestSkip {
     private String key = "service/" + CodaServer.CONSUL_SERVICE_NAME + "/leader";
 
     @Before
-    public void init()
-    {
+    public void init() {
         serviceDiscovery = ConsulServiceDiscovery.getConsulServiceDiscovery();
     }
 
@@ -37,9 +35,9 @@ public class ConsulServiceDiscoveryTestSkip {
 
         // create session and acquire lock.
         for (int i = 0; i < 3; i++) {
-            String hostIp = NetworkUtils.getHostIp();
+            String hostName = NetworkUtils.getSimpleHostName();
             int port = 9911 + i;
-            executor.execute(new ServiceDiscoveryTask(serviceDiscovery, key, hostIp, port));
+            executor.execute(new ServiceDiscoveryTask(serviceDiscovery, key, hostName, port));
         }
 
         Thread.sleep(Long.MAX_VALUE);
@@ -48,25 +46,22 @@ public class ConsulServiceDiscoveryTestSkip {
     private static class ServiceDiscoveryTask implements Runnable {
         private ServiceDiscovery serviceDiscovery;
         private String key;
-        private String hostIp;
+        private String hostName;
         private int port;
 
-        public ServiceDiscoveryTask(ServiceDiscovery serviceDiscovery, String key, String hostIp, int port) {
+        public ServiceDiscoveryTask(ServiceDiscovery serviceDiscovery, String key, String hostName, int port) {
             this.serviceDiscovery = serviceDiscovery;
             this.key = key;
-            this.hostIp = hostIp;
+            this.hostName = hostName;
             this.port = port;
         }
 
         @Override
         public void run() {
-            String hostName = NetworkUtils.getSimpleHostName();
-            System.out.printf("hostName: %s\n", hostName);
-
-            String session = serviceDiscovery.createSession("coda-lock", hostName,"10s", 10);
+            String session = serviceDiscovery.createSession("coda-lock", hostName, "10s", 10);
             System.out.printf("session: %s\n", session);
 
-            String nodeDescription = this.hostIp + ":" + this.port;
+            String nodeDescription = this.hostName + ":" + this.port;
             boolean lockAcquired = serviceDiscovery.acquireLock(key, nodeDescription, session);
 
             System.out.printf("node desc: %s, lock acquired: %s\n", nodeDescription, String.valueOf(lockAcquired));
@@ -74,8 +69,7 @@ public class ConsulServiceDiscoveryTestSkip {
     }
 
     @Test
-    public void getLeader()
-    {
+    public void getLeader() {
         // get leader.
         Map<String, String> leaderMap = serviceDiscovery.getKVValues(key);
         for (String k : leaderMap.keySet()) {
@@ -85,8 +79,7 @@ public class ConsulServiceDiscoveryTestSkip {
     }
 
     @Test
-    public void getHealthService()
-    {
+    public void getHealthService() {
         List<ServiceDiscovery.HostPort> healthServiceList = this.serviceDiscovery.getHealthServices(CodaServer.CONSUL_SERVICE_NAME);
 
         healthServiceList.stream().forEach(h -> System.out.printf("health service host: %s, port: %d\n", h.getHost(), h.getPort()));
