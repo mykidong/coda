@@ -11,6 +11,8 @@ import com.ecwid.consul.v1.session.SessionClient;
 import com.ecwid.consul.v1.session.SessionConsulClient;
 import com.ecwid.consul.v1.session.model.NewSession;
 import com.ecwid.consul.v1.session.model.Session;
+import io.shunters.coda.config.ConfigHandler;
+import io.shunters.coda.config.YamlConfigHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,23 +31,21 @@ public class ConsulServiceDiscovery implements ServiceDiscovery {
 
     private static Logger log = LoggerFactory.getLogger(ConsulServiceDiscovery.class);
 
-    public static final String DEFAULT_HOST = "localhost";
-    public static final int DEFAULT_PORT = 8500;
-
     private ConsulClient client;
 
     private SessionClient sessionClient;
-
-    private String agentHost;
-
-    private int agentPort;
 
     private static final Object lock = new Object();
 
     private static ServiceDiscovery serviceDiscovery;
 
     public static ServiceDiscovery getConsulServiceDiscovery() {
-        return ConsulServiceDiscovery.singleton(DEFAULT_HOST, DEFAULT_PORT);
+        ConfigHandler configHandler = YamlConfigHandler.getConfigHandler();
+
+        String agentHost = (String) configHandler.get(ConfigHandler.CONFIG_CONSUL_AGENT_HOST);
+        int agentPort = (Integer) configHandler.get(ConfigHandler.CONFIG_CONSUL_AGENT_PORT);
+
+        return ConsulServiceDiscovery.singleton(agentHost, agentPort);
     }
 
     public static ServiceDiscovery singleton(String agentHost, int agentPort) {
