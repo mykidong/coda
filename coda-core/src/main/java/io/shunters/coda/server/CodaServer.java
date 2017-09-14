@@ -76,12 +76,12 @@ public class CodaServer implements Runnable{
         }
 
         // create service to consul.
-        String nodeIp = NetworkUtils.getHostIp();
-        String hostPort = nodeIp + ":" + port;
-        String serviceId = nodeIp + "-" + port;
+        String hostName = NetworkUtils.getHostName();
+        String hostPort = hostName + ":" + port;
+        String serviceId = hostName + "-" + port;
 
         this.serviceDiscovery = ConsulServiceDiscovery.getConsulServiceDiscovery();
-        serviceDiscovery.createService(CONSUL_SERVICE_NAME, serviceId, null, nodeIp, port, null, hostPort, "10s", "1s");
+        serviceDiscovery.createService(CONSUL_SERVICE_NAME, serviceId, null, hostName, port, null, hostPort, "10s", "1s");
         log.info("consul service [" + CONSUL_SERVICE_NAME + ":" + serviceId + "] registered.");
     }
 

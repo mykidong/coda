@@ -11,25 +11,6 @@ import java.util.Set;
  * Created by mykidong on 2016-05-25.
  */
 public class NetworkUtils {
-    private static Set<String> PRIVATE_IP_SET = new HashSet<String>();
-
-    static {
-        PRIVATE_IP_SET.add("192");
-        PRIVATE_IP_SET.add("172");
-    }
-
-    public static boolean isValidIp(String ip) {
-        boolean isValid = false;
-        String[] tmp = null;
-
-        if ((ip != null) && ((tmp = ip.split("[.]")) != null)
-                && (tmp.length == 4)
-                && (PRIVATE_IP_SET.contains(tmp[0]) == false)) {
-            isValid = true;
-        }
-
-        return isValid;
-    }
 
     public static InetAddress getInetAddress() throws Exception {
         for (Enumeration<NetworkInterface> en = NetworkInterface
@@ -42,8 +23,7 @@ public class NetworkUtils {
 
                 if (inetAddress instanceof Inet4Address
                         && !inetAddress.isLoopbackAddress() // localhost 제외
-                        && !inetAddress.isLinkLocalAddress()
-                        && isValidIp(inetAddress.getHostAddress())) {
+                        && !inetAddress.isLinkLocalAddress()) {
                     return inetAddress;
                 }
             }
@@ -59,7 +39,7 @@ public class NetworkUtils {
             InetAddress addr = getInetAddress();
             ip = addr.getHostAddress();
         } catch (Exception e) {
-
+            e.printStackTrace();
         }
 
         return ip;
@@ -72,7 +52,7 @@ public class NetworkUtils {
             InetAddress addr = getInetAddress();
             hostname = addr.getHostName();
         } catch (Exception e) {
-
+            e.printStackTrace();
         }
 
         return hostname;
