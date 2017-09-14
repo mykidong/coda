@@ -59,7 +59,7 @@ public class ConsulServiceDiscoveryTestSkip {
 
         @Override
         public void run() {
-            String session = serviceDiscovery.createSession("coda", "node" + index);
+            String session = serviceDiscovery.createSession("coda", "node" + index, "10s");
             String nodeDescription = "node" + index + ":" + (9911 + index);
             boolean lockAcquired = serviceDiscovery.acquireLock(key, nodeDescription, session);
 

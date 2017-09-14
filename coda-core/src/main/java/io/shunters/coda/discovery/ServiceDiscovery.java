@@ -16,7 +16,7 @@ public interface ServiceDiscovery {
 
     void setKVValue(String key, String value);
 
-    String createSession(String name, String node);
+    String createSession(String name, String node, String ttl);
 
     boolean acquireLock(String key, String value, String session);
 
