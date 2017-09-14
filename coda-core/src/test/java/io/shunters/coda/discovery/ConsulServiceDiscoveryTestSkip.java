@@ -1,7 +1,9 @@
 package io.shunters.coda.discovery;
 
+import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -11,14 +13,21 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public class ConsulServiceDiscoveryTestSkip {
 
+    private ServiceDiscovery serviceDiscovery;
+
+    @Before
+    public void init()
+    {
+        serviceDiscovery = ConsulServiceDiscovery.getConsulServiceDiscovery();
+    }
+
+
     @Test
     public void electLeader() throws Exception {
         // before electing leader, make sure that ServerTestSkip is run with
         // mvn -e -Dtest=ServerTestSkip -Dport=9911 test;
         // mvn -e -Dtest=ServerTestSkip -Dport=9912 test;
         // mvn -e -Dtest=ServerTestSkip -Dport=9913 test;
-
-        ServiceDiscovery serviceDiscovery = ConsulServiceDiscovery.getConsulServiceDiscovery();
 
         // create service.
         for (int i = 0; i < 3; i++) {
@@ -65,6 +74,14 @@ public class ConsulServiceDiscoveryTestSkip {
 
             System.out.printf("node desc: %s, lock acquired: %s\n", nodeDescription, String.valueOf(lockAcquired));
         }
+    }
+
+    @Test
+    public void getHealthService()
+    {
+        List<ServiceDiscovery.HostPort> healthServiceList = this.serviceDiscovery.getHealthServices("coda");
+
+        healthServiceList.stream().forEach(h -> System.out.printf("health service host: %s, port: %d\n", h.getHost(), h.getPort()));
     }
 
 }
