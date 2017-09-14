@@ -59,7 +59,8 @@ public class ConsulServiceDiscoveryTestSkip {
 
         @Override
         public void run() {
-            String session = serviceDiscovery.createSession(CodaServer.CONSUL_SERVICE_NAME, "10s", 10);
+            String hostIp = NetworkUtils.getHostIp();
+            String session = serviceDiscovery.createSession("coda-lock", hostIp,"10s", 10);
             System.out.printf("session: %s\n", session);
 
             String nodeDescription = this.hostIp + ":" + this.port;
