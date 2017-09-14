@@ -25,19 +25,25 @@ public class ConsulSessionHolder implements Runnable {
 
     private String sessionName;
 
+    private String nodeDescription;
+
+    private String key;
+
 
     public ConsulSessionHolder(String sessionName, String key, String hostName, int port, int ttl) {
         this.sessionName = sessionName;
         this.hostName = hostName;
         this.port = port;
         this.ttl = ttl;
+        this.key = key;
 
         this.serviceDiscovery = ConsulServiceDiscovery.getConsulServiceDiscovery();
 
         session = serviceDiscovery.createSession(this.sessionName, this.hostName, ttl + "s", 10);
         log.info("session: {}: ", session);
 
-        String nodeDescription = this.hostName + ":" + this.port;
+        nodeDescription = this.hostName + ":" + this.port;
+
         boolean lockAcquired = serviceDiscovery.acquireLock(key, nodeDescription, session);
 
         log.info("node desc: {}, lock acquired: {}", nodeDescription, String.valueOf(lockAcquired));
@@ -51,7 +57,8 @@ public class ConsulSessionHolder implements Runnable {
 
         while (!shutdown)
         {
-            this.serviceDiscovery.renewSession(this.session);
+            serviceDiscovery.renewSession(session);
+            boolean lockAcquired = serviceDiscovery.acquireLock(this.key, nodeDescription, session);
 
             try {
                 Thread.sleep(ttl / 2 * 1000);
