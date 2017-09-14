@@ -65,14 +65,6 @@ public class CodaServer implements Runnable {
         metricsReporter = new SystemOutMetricsReporter(metricRegistry);
         metricsReporter.start();
 
-        channelProcessors = new ArrayList<>();
-        for (int i = 0; i < channelProcessorSize; i++) {
-            ChannelProcessor channelProcessor = new ChannelProcessor(this.metricRegistry);
-            channelProcessor.start();
-
-            channelProcessors.add(channelProcessor);
-        }
-
         // register service onto consul.
         String hostName = NetworkUtils.getSimpleHostName();
         String hostPort = hostName + ":" + port;
@@ -84,6 +76,14 @@ public class CodaServer implements Runnable {
 
         // run consul session holder to elect leader.
         new ConsulSessionHolder(ServiceDiscovery.SESSION_CODA_LOCK, ServiceDiscovery.LEADER_KEY, hostName, port, 10);
+
+        channelProcessors = new ArrayList<>();
+        for (int i = 0; i < channelProcessorSize; i++) {
+            ChannelProcessor channelProcessor = new ChannelProcessor(this.metricRegistry);
+            channelProcessor.start();
+
+            channelProcessors.add(channelProcessor);
+        }
     }
 
     private ChannelProcessor getNextChannelProcessor() {
