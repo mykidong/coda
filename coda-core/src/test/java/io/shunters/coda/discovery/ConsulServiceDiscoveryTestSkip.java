@@ -60,7 +60,7 @@ public class ConsulServiceDiscoveryTestSkip {
 
         @Override
         public void run() {
-            String hostName = NetworkUtils.getHostName();
+            String hostName = NetworkUtils.getSimpleHostName();
             System.out.printf("hostName: %s\n", hostName);
 
             String session = serviceDiscovery.createSession("coda-lock", hostName,"10s", 10);

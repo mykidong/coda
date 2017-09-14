@@ -76,7 +76,7 @@ public class CodaServer implements Runnable{
         }
 
         // create service to consul.
-        String hostName = NetworkUtils.getHostName();
+        String hostName = NetworkUtils.getSimpleHostName();
         String hostPort = hostName + ":" + port;
         String serviceId = hostName + "-" + port;
 

@@ -57,4 +57,42 @@ public class NetworkUtils {
 
         return hostname;
     }
+
+
+    /**
+     * for simple network case.
+     *
+     * @return
+     */
+    public static String getSimpleHostIp() {
+        String ip = null;
+
+        try {
+            InetAddress addr = InetAddress.getLocalHost();
+            ip = addr.getHostAddress();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return ip;
+    }
+
+    /**
+     * for simple network case.
+     *
+     * @return
+     */
+    public static String getSimpleHostName() {
+        String hostname = null;
+
+        try {
+            InetAddress addr = InetAddress.getLocalHost();
+            hostname = addr.getHostName();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return hostname;
+    }
+
 }
