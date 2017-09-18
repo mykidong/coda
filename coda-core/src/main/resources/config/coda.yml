@@ -3,3 +3,7 @@ data.dirs: ["/tmp/coda-data1", "/tmp/coda-data2"]
 
 # maximum size of the log segment file.
 data.segment.maxBytes: 1073741824
+
+# consul agent host.
+consul.agent.host: "localhost"
+consul.agent.port: 8500

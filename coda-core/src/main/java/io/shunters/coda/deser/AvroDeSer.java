@@ -1,6 +1,6 @@
 package io.shunters.coda.deser;
 
-import io.shunters.coda.util.AvroSchemaBuilder;
+import io.shunters.coda.protocol.AvroSchemaLoader;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericDatumWriter;
@@ -16,11 +16,11 @@ public class AvroDeSer {
 
     private static AvroDeSer avroDeSer;
 
-    private AvroSchemaBuilder avroSchemaBuilder;
+    private AvroSchemaLoader avroSchemaBuilder;
 
     private static final Object lock = new Object();
 
-    public static AvroDeSer singleton(AvroSchemaBuilder avroSchemaBuilder) {
+    public static AvroDeSer singleton(AvroSchemaLoader avroSchemaBuilder) {
         if (avroDeSer == null) {
             synchronized (lock) {
                 if (avroDeSer == null) {
@@ -33,11 +33,11 @@ public class AvroDeSer {
 
     public static AvroDeSer getAvroDeSerSingleton()
     {
-        return AvroDeSer.singleton(AvroSchemaBuilder.singleton(AvroSchemaBuilder.DEFAULT_AVRO_SCHEMA_DIR_PATH));
+        return AvroDeSer.singleton(AvroSchemaLoader.singleton(AvroSchemaLoader.DEFAULT_AVRO_SCHEMA_DIR_PATH));
     }
 
 
-    private AvroDeSer(AvroSchemaBuilder avroSchemaBuilder) {
+    private AvroDeSer(AvroSchemaLoader avroSchemaBuilder) {
         this.avroSchemaBuilder = avroSchemaBuilder;
     }
 

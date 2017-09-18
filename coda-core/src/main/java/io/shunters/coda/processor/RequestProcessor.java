@@ -5,7 +5,7 @@ import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.deser.AvroDeSer;
 import io.shunters.coda.protocol.ApiKeyAvroSchemaMap;
 import io.shunters.coda.protocol.ClientServerSpec;
-import io.shunters.coda.util.DisruptorBuilder;
+import io.shunters.coda.util.DisruptorCreator;
 import org.apache.avro.generic.GenericRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +51,7 @@ public class RequestProcessor implements EventHandler<BaseMessage.RequestBytesEv
         this.avroDeSer = AvroDeSer.getAvroDeSerSingleton();
         this.fetchRequestHandler = new FetchRequestHandler();
 
-        this.requestEventDisruptor = DisruptorBuilder.singleton("StoreProcessor", BaseMessage.RequestEvent.FACTORY, 1024, StoreProcessor.singleton());
+        this.requestEventDisruptor = DisruptorCreator.singleton("StoreProcessor", BaseMessage.RequestEvent.FACTORY, 1024, StoreProcessor.singleton());
         this.requestEventTranslator = new BaseMessage.RequestEventTranslator();
     }
 

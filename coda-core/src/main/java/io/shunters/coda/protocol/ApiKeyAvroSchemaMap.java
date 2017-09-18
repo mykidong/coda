@@ -1,6 +1,5 @@
 package io.shunters.coda.protocol;
 
-import io.shunters.coda.util.AvroSchemaBuilder;
 import org.apache.avro.Schema;
 
 import java.util.HashMap;
@@ -11,7 +10,7 @@ import java.util.Map;
  */
 public class ApiKeyAvroSchemaMap {
 
-    private AvroSchemaBuilder avroSchemaBuilder;
+    private AvroSchemaLoader avroSchemaBuilder;
 
     private static ApiKeyAvroSchemaMap apiKeyAvroSchemaMap;
 
@@ -19,7 +18,7 @@ public class ApiKeyAvroSchemaMap {
 
     private Map<Short, String> apiMap = new HashMap<>();
 
-    public static ApiKeyAvroSchemaMap singleton(AvroSchemaBuilder avroSchemaBuilder)
+    public static ApiKeyAvroSchemaMap singleton(AvroSchemaLoader avroSchemaBuilder)
     {
         if(apiKeyAvroSchemaMap == null)
         {
@@ -36,10 +35,10 @@ public class ApiKeyAvroSchemaMap {
 
     public static ApiKeyAvroSchemaMap getApiKeyAvroSchemaMapSingleton()
     {
-        return ApiKeyAvroSchemaMap.singleton(AvroSchemaBuilder.singleton(AvroSchemaBuilder.DEFAULT_AVRO_SCHEMA_DIR_PATH));
+        return ApiKeyAvroSchemaMap.singleton(AvroSchemaLoader.singleton(AvroSchemaLoader.DEFAULT_AVRO_SCHEMA_DIR_PATH));
     }
 
-    private ApiKeyAvroSchemaMap(AvroSchemaBuilder avroSchemaBuilder)
+    private ApiKeyAvroSchemaMap(AvroSchemaLoader avroSchemaBuilder)
     {
         this.avroSchemaBuilder = avroSchemaBuilder;
 

@@ -10,7 +10,7 @@ import io.shunters.coda.offset.OffsetManager;
 import io.shunters.coda.protocol.ApiKeyAvroSchemaMap;
 import io.shunters.coda.protocol.ClientServerSpec;
 import io.shunters.coda.store.LogHandler;
-import io.shunters.coda.util.DisruptorBuilder;
+import io.shunters.coda.util.DisruptorCreator;
 import org.apache.avro.generic.GenericRecord;
 
 import java.nio.ByteBuffer;
@@ -54,7 +54,7 @@ public abstract class AbstractRequestHandler implements RequestHandler{
         // std out reporter for metrics.
         new SystemOutMetricsReporter(metricRegistry).start();
 
-        this.responseEventDisruptor = DisruptorBuilder.singleton("ResponseProcessor", BaseMessage.ResponseEvent.FACTORY, 1024, ResponseProcessor.singleton());
+        this.responseEventDisruptor = DisruptorCreator.singleton("ResponseProcessor", BaseMessage.ResponseEvent.FACTORY, 1024, ResponseProcessor.singleton());
         this.responseEventTranslator = new BaseMessage.ResponseEventTranslator();
     }
 

@@ -3,7 +3,7 @@ package io.shunters.coda.processor;
 import com.codahale.metrics.MetricRegistry;
 import com.lmax.disruptor.dsl.Disruptor;
 import io.shunters.coda.protocol.ClientServerSpec;
-import io.shunters.coda.util.DisruptorBuilder;
+import io.shunters.coda.util.DisruptorCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.Snappy;
@@ -44,7 +44,7 @@ public class ChannelProcessor extends Thread {
         this.queue = new LinkedBlockingQueue<>();
         this.nioSelector = NioSelector.open();
 
-        requestBytesEventDisruptor = DisruptorBuilder.singleton("RequestProcessor", BaseMessage.RequestBytesEvent.FACTORY, 1024, RequestProcessor.singleton());
+        requestBytesEventDisruptor = DisruptorCreator.singleton("RequestProcessor", BaseMessage.RequestBytesEvent.FACTORY, 1024, RequestProcessor.singleton());
         this.requestBytesEventTranslator = new BaseMessage.RequestBytesEventTranslator();
     }
 

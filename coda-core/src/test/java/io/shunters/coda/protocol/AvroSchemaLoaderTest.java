@@ -1,4 +1,4 @@
-package io.shunters.coda.util;
+package io.shunters.coda.protocol;
 
 import org.apache.avro.Schema;
 import org.apache.log4j.xml.DOMConfigurator;
@@ -13,18 +13,18 @@ import java.util.List;
 /**
  * Created by mykidong on 2017-08-24.
  */
-public class AvroSchemaBuilderTest {
+public class AvroSchemaLoaderTest {
 
     private static Logger log;
 
     @Before
     public void init() throws Exception {
-        java.net.URL url = new AvroSchemaBuilderTest().getClass().getResource("/log4j-test.xml");
+        java.net.URL url = new AvroSchemaLoaderTest().getClass().getResource("/log4j-test.xml");
         System.out.println("log4j url: " + url.toString());
 
         DOMConfigurator.configure(url);
 
-        log = LoggerFactory.getLogger(AvroSchemaBuilder.class);
+        log = LoggerFactory.getLogger(AvroSchemaLoader.class);
     }
 
     @Test
@@ -37,10 +37,10 @@ public class AvroSchemaBuilderTest {
         pathList.add("/META-INF/avro/records.avsc");
         pathList.add("/META-INF/avro/produce-request.avsc");
 
-        AvroSchemaBuilder avroSchemaBuilder = AvroSchemaBuilder.singletonForSchemaPaths((String[])pathList.toArray(new String[0]));
+        AvroSchemaLoader avroSchemaLoader = AvroSchemaLoader.singletonForSchemaPaths((String[])pathList.toArray(new String[0]));
 
         String schemaKey = "io.shunters.coda.avro.api.ProduceRequest";
-        Schema schema = avroSchemaBuilder.getSchema(schemaKey);
+        Schema schema = avroSchemaLoader.getSchema(schemaKey);
         System.out.println("schema key: [" + schemaKey + "]\n" + schema.toString(true));
     }
 
@@ -49,9 +49,9 @@ public class AvroSchemaBuilderTest {
     {
         String pathDir = "/META-INF/avro";
 
-        AvroSchemaBuilder avroSchemaBuilder = AvroSchemaBuilder.singleton(pathDir);
+        AvroSchemaLoader avroSchemaLoader = AvroSchemaLoader.singleton(pathDir);
         String schemaKey = "io.shunters.coda.avro.api.ProduceRequest";
-        Schema schema = avroSchemaBuilder.getSchema(schemaKey);
+        Schema schema = avroSchemaLoader.getSchema(schemaKey);
         log.info("schema key: [" + schemaKey + "]\n" + schema.toString(true));
     }
 }

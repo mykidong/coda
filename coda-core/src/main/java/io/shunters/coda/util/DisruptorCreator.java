@@ -15,9 +15,9 @@ import java.util.concurrent.Executors;
 /**
  * Created by mykidong on 2016-09-01.
  */
-public class DisruptorBuilder {
+public class DisruptorCreator {
 
-    private static Logger log = LoggerFactory.getLogger(DisruptorBuilder.class);
+    private static Logger log = LoggerFactory.getLogger(DisruptorCreator.class);
 
     private static ConcurrentMap<String, Disruptor> disruptorMap;
     private static final Object lock = new Object();
