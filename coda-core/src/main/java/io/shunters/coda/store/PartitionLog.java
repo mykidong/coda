@@ -120,7 +120,7 @@ public class PartitionLog {
         return errorCode;
     }
 
-    public FetchRecord fetch(long fetchOffset, int maxBytes) {
+    public LogHandler.FetchRecord fetch(long fetchOffset, int maxBytes) {
         int errorCode = 0;
         long highwaterMarkOffset = 0; // TODO: set highwaterMarkOffset!
 
@@ -165,39 +165,13 @@ public class PartitionLog {
         }
 
 
-        return new FetchRecord(errorCode, highwaterMarkOffset, recordsList);
+        return new LogHandler.FetchRecord(errorCode, highwaterMarkOffset, recordsList);
     }
 
     @Override
     public String toString()
     {
         return "log file: " + this.getFilePath() + ", index file: " + this.offsetIndex.getFilePath();
-    }
-
-    public static class FetchRecord {
-        private int errorCode;
-
-        private long highwaterMarkOffset;
-
-        private List<GenericRecord> recordsList;
-
-        public FetchRecord(int errorCode, long highwaterMarkOffset, List<GenericRecord> recordsList) {
-            this.errorCode = errorCode;
-            this.highwaterMarkOffset = highwaterMarkOffset;
-            this.recordsList = recordsList;
-        }
-
-        public int getErrorCode() {
-            return errorCode;
-        }
-
-        public long getHighwaterMarkOffset() {
-            return highwaterMarkOffset;
-        }
-
-        public List<GenericRecord> getRecordsList() {
-            return recordsList;
-        }
     }
 }
 

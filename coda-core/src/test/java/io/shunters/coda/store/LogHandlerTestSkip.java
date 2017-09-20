@@ -95,8 +95,8 @@ public class LogHandlerTestSkip {
                     {
                         long offset = Long.valueOf(offsetString);
 
-                        String indexFilePath = dataDir + File.separator + topicName + File.separator + partition + File.separator + offset + LogHandler.INDEX_FILE_EXTENSION;
-                        String logFilePath = dataDir + File.separator + topicName + File.separator + partition + File.separator + offset + LogHandler.LOG_FILE_EXTENSION;
+                        String indexFilePath = dataDir + File.separator + topicName + File.separator + partition + File.separator + offset + PartitionLogHandler.INDEX_FILE_EXTENSION;
+                        String logFilePath = dataDir + File.separator + topicName + File.separator + partition + File.separator + offset + PartitionLogHandler.LOG_FILE_EXTENSION;
 
                         OffsetIndex offsetIndex = new OffsetIndex(new File(indexFilePath), offset);
                         PartitionLog partitionLog = new PartitionLog(new File(logFilePath), offset, offsetIndex);

@@ -2,7 +2,7 @@ package io.shunters.coda.processor;
 
 import io.shunters.coda.offset.TopicPartition;
 import io.shunters.coda.protocol.ClientServerSpec;
-import io.shunters.coda.store.PartitionLog;
+import io.shunters.coda.store.LogHandler;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
@@ -73,7 +73,7 @@ public class FetchRequestHandler extends AbstractRequestHandler {
                 int maxBytes = (Integer) fetchRequestSubMessage.get("maxBytes");
 
                 // fetch records.
-                PartitionLog.FetchRecord fetchRecord = logHandler.fetch(new TopicPartition(topicName, partition), fetchOffset, maxBytes);
+                LogHandler.FetchRecord fetchRecord = logHandler.fetch(new TopicPartition(topicName, partition), fetchOffset, maxBytes);
                 int errorCode = fetchRecord.getErrorCode();
                 long highwaterMarkOffset = fetchRecord.getHighwaterMarkOffset();
                 List<GenericRecord> recordsList = fetchRecord.getRecordsList();
