@@ -3,3 +3,10 @@ data.dirs: ["data/data1", "data/data2"]
 
 # maximum size of the log segment file.
 data.segment.maxBytes: 1073741824
+
+# consul agent host.
+consul.agent.host: "localhost"
+consul.agent.port: 8500
+
+# log4j xml path.
+log4j.xml.path: "log4j-test.xml"

@@ -11,6 +11,8 @@ public interface ConfigHandler {
     public static final String CONFIG_CONSUL_AGENT_HOST = "consul.agent.host";
     public static final String CONFIG_CONSUL_AGENT_PORT = "consul.agent.port";
 
+    public static final String CONFIG_LOG4J_XML_PATH = "log4j.xml.path";
+
 
     Object get(String key);
 }

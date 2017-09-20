@@ -17,7 +17,6 @@ public class ServerTestSkip {
     @Before
     public void init() throws Exception {
         java.net.URL url = new ServerTestSkip().getClass().getResource("/log4j-test.xml");
-        System.out.println("log4j url: " + url.toString());
 
         DOMConfigurator.configure(url);
     }

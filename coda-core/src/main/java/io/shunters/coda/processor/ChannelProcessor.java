@@ -44,7 +44,7 @@ public class ChannelProcessor extends Thread {
         this.queue = new LinkedBlockingQueue<>();
         this.nioSelector = NioSelector.open();
 
-        requestBytesEventDisruptor = DisruptorCreator.singleton("RequestProcessor", BaseMessage.RequestBytesEvent.FACTORY, 1024, RequestProcessor.singleton());
+        requestBytesEventDisruptor = DisruptorCreator.singleton(DisruptorCreator.DISRUPTOR_NAME_REQUEST_PROCESSOR, BaseMessage.RequestBytesEvent.FACTORY, 1024, RequestProcessor.singleton());
         this.requestBytesEventTranslator = new BaseMessage.RequestBytesEventTranslator();
     }
 

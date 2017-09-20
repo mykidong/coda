@@ -51,7 +51,7 @@ public class RequestProcessor implements EventHandler<BaseMessage.RequestBytesEv
         this.avroDeSer = AvroDeSer.getAvroDeSerSingleton();
         this.fetchRequestHandler = new FetchRequestHandler();
 
-        this.requestEventDisruptor = DisruptorCreator.singleton("StoreProcessor", BaseMessage.RequestEvent.FACTORY, 1024, StoreProcessor.singleton());
+        this.requestEventDisruptor = DisruptorCreator.singleton(DisruptorCreator.DISRUPTOR_NAME_STORE_PROCESSOR, BaseMessage.RequestEvent.FACTORY, 1024, StoreProcessor.singleton());
         this.requestEventTranslator = new BaseMessage.RequestEventTranslator();
     }
 
