@@ -1,6 +1,8 @@
 package io.shunters.coda.server;
 
 import com.codahale.metrics.MetricRegistry;
+import io.shunters.coda.config.ConfigHandler;
+import io.shunters.coda.config.YamlConfigHandler;
 import io.shunters.coda.discovery.ConsulServiceDiscovery;
 import io.shunters.coda.discovery.ConsulSessionHolder;
 import io.shunters.coda.discovery.ServiceDiscovery;
@@ -47,13 +49,16 @@ public class CodaServer implements Runnable {
 
     private ServiceDiscovery serviceDiscovery;
 
+    private ConfigHandler configHandler;
+
     public CodaServer(int port, int channelProcessorSize) {
 
-        // TODO: log4j init. should be configurable.
+        configHandler = YamlConfigHandler.getConfigHandler();
+
+        String log4jXmlPath = "/" + (String) configHandler.get(ConfigHandler.CONFIG_LOG4J_XML_PATH);
+
         // log4j init.
-        java.net.URL url = this.getClass().getResource("/log4j.xml");
-        System.out.println("log4j url: " + url.toString());
-        DOMConfigurator.configure(url);
+        DOMConfigurator.configure(this.getClass().getResource(log4jXmlPath));
 
         this.port = port;
 

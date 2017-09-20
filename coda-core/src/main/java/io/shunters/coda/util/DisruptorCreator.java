@@ -19,6 +19,10 @@ public class DisruptorCreator {
 
     private static Logger log = LoggerFactory.getLogger(DisruptorCreator.class);
 
+    public static final String DISRUPTOR_NAME_RESPONSE_PROCESSOR = "ResponseProcessor";
+    public static final String DISRUPTOR_NAME_REQUEST_PROCESSOR = "RequestProcessor";
+    public static final String DISRUPTOR_NAME_STORE_PROCESSOR = "StoreProcessor";
+
     private static ConcurrentMap<String, Disruptor> disruptorMap;
     private static final Object lock = new Object();
 

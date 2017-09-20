@@ -54,7 +54,7 @@ public abstract class AbstractRequestHandler implements RequestHandler {
         // std out reporter for metrics.
         new SystemOutMetricsReporter(metricRegistry).start();
 
-        this.responseEventDisruptor = DisruptorCreator.singleton("ResponseProcessor", BaseMessage.ResponseEvent.FACTORY, 1024, ResponseProcessor.singleton());
+        this.responseEventDisruptor = DisruptorCreator.singleton(DisruptorCreator.DISRUPTOR_NAME_RESPONSE_PROCESSOR, BaseMessage.ResponseEvent.FACTORY, 1024, ResponseProcessor.singleton());
         this.responseEventTranslator = new BaseMessage.ResponseEventTranslator();
     }
 
