@@ -6,10 +6,11 @@ import io.shunters.coda.deser.MessageDeSer;
 import io.shunters.coda.metrics.MetricRegistryFactory;
 import io.shunters.coda.metrics.SystemOutMetricsReporter;
 import io.shunters.coda.offset.OffsetHandler;
-import io.shunters.coda.offset.OffsetManager;
+import io.shunters.coda.offset.PartitionOffsetHandler;
 import io.shunters.coda.protocol.ApiKeyAvroSchemaMap;
 import io.shunters.coda.protocol.ClientServerSpec;
 import io.shunters.coda.store.LogHandler;
+import io.shunters.coda.store.PartitionLogHandler;
 import io.shunters.coda.util.DisruptorCreator;
 import org.apache.avro.generic.GenericRecord;
 
@@ -18,7 +19,7 @@ import java.nio.ByteBuffer;
 /**
  * Created by mykidong on 2017-09-05.
  */
-public abstract class AbstractRequestHandler implements RequestHandler{
+public abstract class AbstractRequestHandler implements RequestHandler {
 
     protected LogHandler logHandler;
 
@@ -40,10 +41,9 @@ public abstract class AbstractRequestHandler implements RequestHandler{
      */
     private BaseMessage.ResponseEventTranslator responseEventTranslator;
 
-    public AbstractRequestHandler()
-    {
-        logHandler = LogHandler.singleton();
-        offsetHandler = OffsetManager.singleton();
+    public AbstractRequestHandler() {
+        logHandler = PartitionLogHandler.singleton();
+        offsetHandler = PartitionOffsetHandler.singleton();
 
         apiKeyAvroSchemaMap = ApiKeyAvroSchemaMap.getApiKeyAvroSchemaMapSingleton();
         messageDeSer = MessageDeSer.singleton();
@@ -62,8 +62,7 @@ public abstract class AbstractRequestHandler implements RequestHandler{
 
 
     @Override
-    public void handleAndResponse(String channelId, NioSelector nioSelector, GenericRecord requestRecord)
-    {
+    public void handleAndResponse(String channelId, NioSelector nioSelector, GenericRecord requestRecord) {
         GenericRecord responseRecord = handle(channelId, nioSelector, requestRecord);
 
         ByteBuffer responseBuffer = messageDeSer.serializeResponseToByteBuffer(ClientServerSpec.COMPRESSION_CODEC_SNAPPY, responseRecord).getByteBuffer();

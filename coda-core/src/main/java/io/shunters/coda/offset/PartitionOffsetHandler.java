@@ -2,6 +2,7 @@ package io.shunters.coda.offset;
 
 import io.shunters.coda.store.LogHandler;
 import io.shunters.coda.store.PartitionLog;
+import io.shunters.coda.store.PartitionLogHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,9 +14,9 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by mykidong on 2016-09-01.
  */
-public class OffsetManager implements OffsetHandler {
+public class PartitionOffsetHandler implements OffsetHandler {
 
-    private static Logger log = LoggerFactory.getLogger(OffsetManager.class);
+    private static Logger log = LoggerFactory.getLogger(PartitionOffsetHandler.class);
 
     private LogHandler logHandler;
 
@@ -29,7 +30,7 @@ public class OffsetManager implements OffsetHandler {
         if (offsetHandler == null) {
             synchronized (lock) {
                 if (offsetHandler == null) {
-                    offsetHandler = new OffsetManager();
+                    offsetHandler = new PartitionOffsetHandler();
                 }
             }
         }
@@ -37,9 +38,9 @@ public class OffsetManager implements OffsetHandler {
         return offsetHandler;
     }
 
-    private OffsetManager() {
+    private PartitionOffsetHandler() {
         this.topicPartitionOffsetMap = new ConcurrentHashMap<>();
-        this.logHandler = LogHandler.singleton();
+        this.logHandler = PartitionLogHandler.singleton();
 
         loadOffset();
     }
