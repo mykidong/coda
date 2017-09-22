@@ -16,8 +16,8 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * data directory structures look like this:
  * <p>
- * index file path: [data-dir]/[topic]/[partition]/[offset].index
- * log file path: [data-dir]/[topic]/[partition]/[offset].log
+ * index file path: [data-dir]/[topic]/[partition]/[first-offset].index
+ * log file path: [data-dir]/[topic]/[partition]/[first-offset].log
  */
 public class PartitionLogHandler implements LogHandler {
 

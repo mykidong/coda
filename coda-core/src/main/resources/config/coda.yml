@@ -1,7 +1,13 @@
+# broker id.
+broker.id: 0
+
+# broker listening port.
+broker.port: 9911
+
 # coda log data directories.
 data.dirs: ["/tmp/coda-data1", "/tmp/coda-data2"]
 
-# maximum size of the log segment file.
+# maximum size of the partition log segment file.
 data.segment.maxBytes: 1073741824
 
 # consul agent host.
@@ -10,3 +16,9 @@ consul.agent.port: 8500
 
 # log4j xml path.
 log4j.xml.path: "log4j.xml"
+
+# number of partitions.
+number.partitions: 2
+
+# topic partition replication factor.
+partition.replication.factor: 3
