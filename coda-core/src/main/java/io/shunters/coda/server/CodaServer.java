@@ -27,6 +27,25 @@ import java.util.List;
 import java.util.Random;
 
 /**
+ *  Request / Response Process Flow Example:
+ *
+ *
+ *
+ *        [Channel Processor] --> [Disruptor] --> [Request Processor] --> [Disruptor] --> [Store Processor]
+ *                 ^                                       |                                        |
+ *                 |                                       |                                        |
+ *                 |                              [Fetch Request Handler]                  [Produce Request Handler]
+ *                 |                                       |                                        |
+ *                 |                                       |                                        |
+ *                 |                                       + ---------------> [Disruptor] <-------- +
+ *                 |                                                               |
+ *                 |                                                               |
+ *                 |          (wake up)                                            v
+ *                 + ----------------------------------------------------- [Response Processor]
+ *
+ *
+ *
+ *
  * Created by mykidong on 2016-08-23.
  */
 public class CodaServer implements Runnable {

@@ -1,5 +1,7 @@
 package io.shunters.coda;
 
+import io.shunters.coda.config.ConfigHandler;
+import io.shunters.coda.config.YamlConfigHandler;
 import io.shunters.coda.server.CodaServer;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.junit.Before;
@@ -24,7 +26,10 @@ public class ServerTestSkip {
     @Test
     public void run() throws Exception
     {
-        int port = Integer.valueOf(System.getProperty("port", "9911"));
+        ConfigHandler configHandler = YamlConfigHandler.getConfigHandler();
+        int defaultPort = (Integer) configHandler.get(ConfigHandler.CONFIG_BROKER_PORT);
+
+        int port = Integer.valueOf(System.getProperty("port", String.valueOf(defaultPort)));
 
         CodaServer broker = new CodaServer(port, 4);
         Thread t = new Thread(broker);

@@ -1,3 +1,9 @@
+# broker id.
+broker.id: 0
+
+# broker listening port.
+broker.port: 9911
+
 # coda log data directories.
 data.dirs: ["data/data1", "data/data2"]
 
@@ -10,3 +16,9 @@ consul.agent.port: 8500
 
 # log4j xml path.
 log4j.xml.path: "log4j-test.xml"
+
+# number of partitions.
+number.partitions: 2
+
+# topic partition replication factor.
+partition.replication.factor: 2
