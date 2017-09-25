@@ -56,125 +56,129 @@ public class ChannelProcessor extends Thread {
 
     @Override
     public void run() {
+        while (true) {
+            SocketChannel socketChannel = this.queue.poll();
 
-        try {
-            while (true) {
-                SocketChannel socketChannel = this.queue.poll();
+            // if new connection is added, register it to selector.
+            if (socketChannel != null) {
+                String channelId = NioSelector.makeChannelId(socketChannel);
+                nioSelector.register(channelId, socketChannel, SelectionKey.OP_READ);
+            }
 
-                // if new connection is added, register it to selector.
-                if (socketChannel != null) {
-                    String channelId = NioSelector.makeChannelId(socketChannel);
-                    nioSelector.register(channelId, socketChannel, SelectionKey.OP_READ);
-                }
+            int ready = this.nioSelector.select();
+            if (ready == 0) {
+                continue;
+            }
 
-                int ready = this.nioSelector.select();
-                if (ready == 0) {
-                    continue;
-                }
+            Iterator<SelectionKey> iter = this.nioSelector.selectedKeys().iterator();
 
-                Iterator<SelectionKey> iter = this.nioSelector.selectedKeys().iterator();
+            while (iter.hasNext()) {
+                SelectionKey key = iter.next();
 
-                while (iter.hasNext()) {
-                    SelectionKey key = iter.next();
+                iter.remove();
 
-                    iter.remove();
-
-                    if (key.isReadable()) {
-                        this.request(key);
-                    } else if (key.isWritable()) {
-                        this.response(key);
-                    }
+                if (key.isReadable()) {
+                    this.request(key);
+                } else if (key.isWritable()) {
+                    this.response(key);
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-
-            throw new RuntimeException(e);
         }
     }
 
 
-    private void request(SelectionKey key) throws IOException {
-
+    private void request(SelectionKey key) {
         SocketChannel socketChannel = (SocketChannel) key.channel();
 
         // channel id.
         String channelId = NioSelector.makeChannelId(socketChannel);
 
-        // total size.
-        ByteBuffer totalSizeBuffer = ByteBuffer.allocate(4);
-        socketChannel.read(totalSizeBuffer);
-        totalSizeBuffer.rewind();
+        try {
+            // total size.
+            ByteBuffer totalSizeBuffer = ByteBuffer.allocate(4);
+            socketChannel.read(totalSizeBuffer);
+            totalSizeBuffer.rewind();
 
-        int totalSize = totalSizeBuffer.getInt();
+            int totalSize = totalSizeBuffer.getInt();
 
-        ByteBuffer buffer = ByteBuffer.allocate(totalSize);
-        socketChannel.read(buffer);
-        buffer.rewind();
+            ByteBuffer buffer = ByteBuffer.allocate(totalSize);
+            socketChannel.read(buffer);
+            buffer.rewind();
 
-        // api key
-        short apiKey = buffer.getShort();
+            // api key
+            short apiKey = buffer.getShort();
 
-        // api version.
-        short apiVersion = buffer.getShort();
+            // api version.
+            short apiVersion = buffer.getShort();
 
-        // messsage format.
-        byte messageFormat = buffer.get();
+            // messsage format.
+            byte messageFormat = buffer.get();
 
-        // TODO: just avro message format is allowed.
-        //       another formats like protocol buffers, etc. should be supported in future.
-        if (messageFormat != ClientServerSpec.MESSAGE_FORMAT_AVRO) {
-            log.error("Not Avro Message Format!");
+            // TODO: just avro message format is allowed.
+            //       another formats like protocol buffers, etc. should be supported in future.
+            if (messageFormat != ClientServerSpec.MESSAGE_FORMAT_AVRO) {
+                log.error("Not Avro Message Format!");
 
-            return;
+                return;
+            }
+
+            // compression codec.
+            byte compressionCodec = buffer.get();
+
+            // message bytes.
+            byte[] messsageBytes = new byte[totalSize - (2 + 2 + 1 + 1)];
+            buffer.get(messsageBytes);
+
+            // if avro bytes is coompressed by snappy, uncompress them.
+            if (compressionCodec == ClientServerSpec.COMPRESSION_CODEC_SNAPPY) {
+                messsageBytes = Snappy.uncompress(messsageBytes);
+            }
+
+            // construct disruptor translator.
+            this.requestBytesEventTranslator.setChannelId(channelId);
+            this.requestBytesEventTranslator.setNioSelector(this.nioSelector);
+            this.requestBytesEventTranslator.setApiKey(apiKey);
+            this.requestBytesEventTranslator.setApiVersion(apiVersion);
+            this.requestBytesEventTranslator.setMessageFormat(messageFormat);
+            this.requestBytesEventTranslator.setMessageBytes(messsageBytes);
+
+            // produce request bytes event to disruptor.
+            this.requestBytesEventDisruptor.publishEvent(this.requestBytesEventTranslator);
+
+            this.metricRegistry.meter("ChannelProcessor.read").mark();
+        } catch (Exception e) {
+            nioSelector.removeSocketChannel(channelId);
+            key.cancel();
         }
-
-        // compression codec.
-        byte compressionCodec = buffer.get();
-
-        // message bytes.
-        byte[] messsageBytes = new byte[totalSize - (2 + 2 + 1 + 1)];
-        buffer.get(messsageBytes);
-
-        // if avro bytes is coompressed by snappy, uncompress them.
-        if(compressionCodec == ClientServerSpec.COMPRESSION_CODEC_SNAPPY)
-        {
-            messsageBytes = Snappy.uncompress(messsageBytes);
-        }
-
-        // construct disruptor translator.
-        this.requestBytesEventTranslator.setChannelId(channelId);
-        this.requestBytesEventTranslator.setNioSelector(this.nioSelector);
-        this.requestBytesEventTranslator.setApiKey(apiKey);
-        this.requestBytesEventTranslator.setApiVersion(apiVersion);
-        this.requestBytesEventTranslator.setMessageFormat(messageFormat);
-        this.requestBytesEventTranslator.setMessageBytes(messsageBytes);
-
-        // produce request bytes event to disruptor.
-        this.requestBytesEventDisruptor.publishEvent(this.requestBytesEventTranslator);
-
-        this.metricRegistry.meter("ChannelProcessor.read").mark();
     }
 
-    private void response(SelectionKey key) throws IOException {
+    private void response(SelectionKey key) {
         SocketChannel socketChannel = (SocketChannel) key.channel();
 
-        ByteBuffer buffer = (ByteBuffer) key.attachment();
+        // channel id.
+        String channelId = NioSelector.makeChannelId(socketChannel);
 
-        if (buffer == null) {
-            return;
+        try {
+            ByteBuffer buffer = (ByteBuffer) key.attachment();
+
+            if (buffer == null) {
+                return;
+            }
+
+            buffer.rewind();
+
+            while (buffer.hasRemaining()) {
+                socketChannel.write(buffer);
+            }
+
+            buffer.clear();
+
+            this.nioSelector.interestOps(socketChannel, SelectionKey.OP_READ);
+
+            this.metricRegistry.meter("ChannelProcessor.write").mark();
+        } catch (IOException e) {
+            nioSelector.removeSocketChannel(channelId);
+            key.cancel();
         }
-
-        buffer.rewind();
-
-        while (buffer.hasRemaining()) {
-            socketChannel.write(buffer);
-        }
-
-        buffer.clear();
-
-        this.nioSelector.interestOps(socketChannel, SelectionKey.OP_READ);
-
-        this.metricRegistry.meter("ChannelProcessor.write").mark();
     }
 }

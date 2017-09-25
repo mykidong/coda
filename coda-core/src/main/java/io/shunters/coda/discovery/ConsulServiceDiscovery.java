@@ -10,7 +10,6 @@ import com.ecwid.consul.v1.kv.model.PutParams;
 import com.ecwid.consul.v1.session.SessionClient;
 import com.ecwid.consul.v1.session.SessionConsulClient;
 import com.ecwid.consul.v1.session.model.NewSession;
-import com.ecwid.consul.v1.session.model.Session;
 import io.shunters.coda.config.ConfigHandler;
 import io.shunters.coda.config.YamlConfigHandler;
 import org.slf4j.Logger;
@@ -100,9 +99,9 @@ public class ConsulServiceDiscovery implements ServiceDiscovery {
 
 
     @Override
-    public List<HostPort> getHealthServices(String serviceName) {
+    public List<ServiceNode> getHealthServices(String serviceName) {
 
-        List<HostPort> list = new ArrayList<>();
+        List<ServiceNode> list = new ArrayList<>();
 
         Response<List<HealthService>> healthServiceResponse = client.getHealthServices(serviceName, true, QueryParams.DEFAULT);
 
@@ -114,11 +113,13 @@ public class ConsulServiceDiscovery implements ServiceDiscovery {
         for (HealthService healthService : healthServices) {
             HealthService.Service service = healthService.getService();
 
+            String id = service.getId();
+
             String address = healthService.getNode().getAddress();
 
             int port = service.getPort();
 
-            list.add(new HostPort(address, port));
+            list.add(new ServiceNode(id, address, port));
         }
 
         return list;

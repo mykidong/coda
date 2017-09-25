@@ -12,7 +12,7 @@ import java.util.Map;
 public class ConsulServiceDiscoveryTestSkip {
 
     private ServiceDiscovery serviceDiscovery;
-    private String key = "service/" + ServiceDiscovery.SERVICE_NAME + "/leader";
+    private String key = ServiceDiscovery.KEY_SERVICE_CONTROLLER_LEADER;
 
     @Before
     public void init() {
@@ -35,9 +35,9 @@ public class ConsulServiceDiscoveryTestSkip {
 
     @Test
     public void getHealthService() {
-        List<ServiceDiscovery.HostPort> healthServiceList = this.serviceDiscovery.getHealthServices(ServiceDiscovery.SERVICE_NAME);
+        List<ServiceDiscovery.ServiceNode> healthServiceList = this.serviceDiscovery.getHealthServices(ServiceDiscovery.SERVICE_CONTROLLER);
 
-        healthServiceList.stream().forEach(h -> System.out.printf("health service host: %s, port: %d\n", h.getHost(), h.getPort()));
+        healthServiceList.stream().forEach(h -> System.out.printf("health service id: %s, host: %s, port: %d\n", h.getId(), h.getHost(), h.getPort()));
     }
 
 }
