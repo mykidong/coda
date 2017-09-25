@@ -54,6 +54,23 @@ public class NioSelector {
         }
     }
 
+    public void removeSocketChannel(String channelId)
+    {
+        SocketChannel socketChannel = this.channelMap.get(channelId);
+
+        if(socketChannel != null) {
+            try {
+                socketChannel.finishConnect();
+            }catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
+
+        this.channelMap.remove(channelId);
+
+    }
+
     public void attach(String channelId, int interestOps, Object attachment)
     {
         SocketChannel socketChannel = this.channelMap.get(channelId);

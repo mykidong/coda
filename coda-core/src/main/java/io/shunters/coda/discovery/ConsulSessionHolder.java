@@ -1,5 +1,7 @@
 package io.shunters.coda.discovery;
 
+import io.shunters.coda.config.ConfigHandler;
+import io.shunters.coda.config.YamlConfigHandler;
 import io.shunters.coda.server.CodaServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,9 +31,12 @@ public class ConsulSessionHolder implements Runnable {
 
     private String key;
 
+    private int brokerId;
 
-    public ConsulSessionHolder(String sessionName, String key, String hostName, int port, int ttl) {
+
+    public ConsulSessionHolder(String sessionName, String key, int brokerId, String hostName, int port, int ttl) {
         this.sessionName = sessionName;
+        this.brokerId = brokerId;
         this.hostName = hostName;
         this.port = port;
         this.ttl = ttl;
@@ -42,7 +47,7 @@ public class ConsulSessionHolder implements Runnable {
         session = serviceDiscovery.createSession(this.sessionName, this.hostName, ttl + "s", 10);
         log.info("session: {}: ", session);
 
-        nodeDescription = this.hostName + ":" + this.port;
+        nodeDescription = ServiceDiscovery.ServiceNode.describe(this.brokerId,this.hostName, this.port);
 
         boolean lockAcquired = serviceDiscovery.acquireLock(key, nodeDescription, session);
 

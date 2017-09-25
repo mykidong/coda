@@ -6,6 +6,8 @@ import io.shunters.coda.config.YamlConfigHandler;
 import io.shunters.coda.discovery.ConsulServiceDiscovery;
 import io.shunters.coda.discovery.ConsulSessionHolder;
 import io.shunters.coda.discovery.ServiceDiscovery;
+import io.shunters.coda.meta.BrokerController;
+import io.shunters.coda.meta.Controller;
 import io.shunters.coda.metrics.MetricRegistryFactory;
 import io.shunters.coda.metrics.MetricsReporter;
 import io.shunters.coda.metrics.SystemOutMetricsReporter;
@@ -70,6 +72,8 @@ public class CodaServer implements Runnable {
 
     private ConfigHandler configHandler;
 
+    private Controller controller;
+
     public CodaServer(int port, int channelProcessorSize) {
 
         configHandler = YamlConfigHandler.getConfigHandler();
@@ -97,17 +101,8 @@ public class CodaServer implements Runnable {
             channelProcessors.add(channelProcessor);
         }
 
-        // register service onto consul.
-        String hostName = NetworkUtils.getSimpleHostName();
-        String hostPort = hostName + ":" + port;
-        String serviceId = hostName + "-" + port;
-
-        this.serviceDiscovery = ConsulServiceDiscovery.getConsulServiceDiscovery();
-        serviceDiscovery.createService(ServiceDiscovery.SERVICE_NAME, serviceId, null, hostName, port, null, hostPort, "10s", "1s");
-        log.info("consul service [" + ServiceDiscovery.SERVICE_NAME + ":" + serviceId + "] registered.");
-
-        // run consul session holder to elect leader.
-        new ConsulSessionHolder(ServiceDiscovery.SESSION_CODA_LOCK, ServiceDiscovery.LEADER_KEY, hostName, port, 10);
+        // run broker controller.
+        controller = BrokerController.singleton(port);
     }
 
     private ChannelProcessor getNextChannelProcessor() {

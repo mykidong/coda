@@ -1,7 +1,5 @@
 package io.shunters.coda.discovery;
 
-import io.shunters.coda.server.CodaServer;
-
 import java.util.List;
 import java.util.Map;
 
@@ -10,15 +8,13 @@ import java.util.Map;
  */
 public interface ServiceDiscovery {
 
-    public static final String SERVICE_NAME = "coda";
-
-    public static final String LEADER_KEY = "service/" + SERVICE_NAME + "/leader";
-
-    public static final String SESSION_CODA_LOCK = "coda-lock";
+    public static final String SERVICE_CONTROLLER = "controller";
+    public static final String KEY_SERVICE_CONTROLLER_LEADER = "service/" + SERVICE_CONTROLLER + "/leader";
+    public static final String SESSION_LOCK_SERVICE_CONTROLLER = SERVICE_CONTROLLER + "-lock";
 
     void createService(String serviceName, String id, List<String> tags, String address, int port, String script, String tcp, String interval, String timeout);
 
-    List<HostPort> getHealthServices(String path);
+    List<ServiceNode> getHealthServices(String path);
 
     Map<String, String> getKVValues(String keyPath);
 
@@ -34,15 +30,21 @@ public interface ServiceDiscovery {
 
     void destroySession(String session);
 
-    public static class HostPort
+    public static class ServiceNode
     {
+        private String id;
         private String host;
         private int port;
 
-        public HostPort(String host, int port)
+        public ServiceNode(String id, String host, int port)
         {
+            this.id = id;
             this.host = host;
             this.port = port;
+        }
+
+        public String getId() {
+            return id;
         }
 
         public String getHost() {
@@ -51,6 +53,11 @@ public interface ServiceDiscovery {
 
         public int getPort() {
             return port;
+        }
+
+        public static String describe(int id, String host, int port)
+        {
+            return id + "-" + host + "-" + port;
         }
     }
 }
