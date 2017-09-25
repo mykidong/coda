@@ -74,6 +74,8 @@ public class CodaServer implements Runnable {
 
     private Controller controller;
 
+    private boolean shutdown = false;
+
     public CodaServer(int port, int channelProcessorSize) {
 
         configHandler = YamlConfigHandler.getConfigHandler();
@@ -126,7 +128,7 @@ public class CodaServer implements Runnable {
 
             log.info("coda server is listening on [{}]...", this.port);
 
-            while (true) {
+            while (!shutdown) {
                 int readyChannels = this.selector.select();
                 if (readyChannels == 0) {
                     continue;
@@ -166,5 +168,10 @@ public class CodaServer implements Runnable {
 
         // put socket channel to read channel processor.
         this.getNextChannelProcessor().put(socketChannel);
+    }
+
+    public void shutdown()
+    {
+        shutdown = true;
     }
 }

@@ -15,6 +15,8 @@ public interface Controller {
 
     Metadata getMetadata();
 
+    void shutdown();
+
 
     public static class Metadata
     {

@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by mykidong on 2017-09-14.
  */
-public class ConsulSessionHolder implements Runnable {
+public class ConsulSessionHolder implements SessionHolder, Runnable {
 
     private static Logger log = LoggerFactory.getLogger(ConsulSessionHolder.class);
 
@@ -77,6 +77,7 @@ public class ConsulSessionHolder implements Runnable {
 
     }
 
+    @Override
     public void shutdown()
     {
         shutdown = true;

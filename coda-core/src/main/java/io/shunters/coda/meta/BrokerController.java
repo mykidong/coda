@@ -5,6 +5,7 @@ import io.shunters.coda.config.YamlConfigHandler;
 import io.shunters.coda.discovery.ConsulServiceDiscovery;
 import io.shunters.coda.discovery.ConsulSessionHolder;
 import io.shunters.coda.discovery.ServiceDiscovery;
+import io.shunters.coda.discovery.SessionHolder;
 import io.shunters.coda.util.NetworkUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,8 @@ public class BrokerController implements Controller, Runnable {
 
     private int numberOfPartitions;
 
+    private SessionHolder controllerSessionHolder;
+
     public static Controller singleton(int port) {
         if (controller == null) {
             synchronized (lock) {
@@ -67,7 +70,7 @@ public class BrokerController implements Controller, Runnable {
         log.info("consul service [" + ServiceDiscovery.SERVICE_CONTROLLER + ":" + serviceId + "] registered.");
 
         // run consul session holder to elect controller leader.
-        new ConsulSessionHolder(ServiceDiscovery.SESSION_LOCK_SERVICE_CONTROLLER, ServiceDiscovery.KEY_SERVICE_CONTROLLER_LEADER, brokerId, hostName, port, ttl);
+        controllerSessionHolder = new ConsulSessionHolder(ServiceDiscovery.SESSION_LOCK_SERVICE_CONTROLLER, ServiceDiscovery.KEY_SERVICE_CONTROLLER_LEADER, brokerId, hostName, port, ttl);
 
         // run thread.
         Thread t = new Thread(this);
@@ -147,8 +150,10 @@ public class BrokerController implements Controller, Runnable {
 
     }
 
+    @Override
     public void shutdown()
     {
+        this.controllerSessionHolder.shutdown();
         shutdown = true;
     }
 }
