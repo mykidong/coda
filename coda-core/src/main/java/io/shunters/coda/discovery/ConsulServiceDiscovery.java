@@ -15,10 +15,7 @@ import io.shunters.coda.config.YamlConfigHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Leader Election:
@@ -151,6 +148,54 @@ public class ConsulServiceDiscovery implements ServiceDiscovery {
         }
 
         return map;
+    }
+
+    @Override
+    public String getKVValue(String key)
+    {
+        Response<GetValue> valueResponse = client.getKVValue(key);
+
+        GetValue getValue = valueResponse.getValue();
+        if(getValue == null)
+        {
+            return null;
+        }
+
+        return getValue.getDecodedValue();
+    }
+
+    @Override
+    public Set<String> getKVKeysOnly(String keyPath)
+    {
+        Response<List<String>> valueResponse = client.getKVKeysOnly(keyPath);
+
+        List<String> getValues = valueResponse.getValue();
+
+        if (getValues == null) {
+            return null;
+        }
+
+        Set<String> set = new HashSet<>();
+
+        for (String key : getValues) {
+            if (key != null) {
+                set.add(key);
+            }
+        }
+
+        return set;
+    }
+
+    @Override
+    public void deleteKVValue(String key)
+    {
+        client.deleteKVValue(key);
+    }
+
+    @Override
+    public void deleteKVValuesRecursively(String key)
+    {
+        client.deleteKVValues(key);
     }
 
     @Override

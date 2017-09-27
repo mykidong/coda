@@ -11,6 +11,8 @@ public interface Controller {
 
     boolean isController();
 
+    boolean isLeader(String topicName, int partition);
+
     List<ServiceDiscovery.ServiceNode> getBrokerList();
 
     Metadata getMetadata();

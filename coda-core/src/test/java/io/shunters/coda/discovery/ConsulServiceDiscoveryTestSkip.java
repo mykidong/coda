@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by mykidong on 2017-09-14.
@@ -38,6 +39,16 @@ public class ConsulServiceDiscoveryTestSkip {
         List<ServiceDiscovery.ServiceNode> healthServiceList = this.serviceDiscovery.getHealthServices(ServiceDiscovery.SERVICE_CONTROLLER);
 
         healthServiceList.stream().forEach(h -> System.out.printf("health service id: %s, host: %s, port: %d\n", h.getId(), h.getHost(), h.getPort()));
+    }
+
+    @Test
+    public void getKVKeysOnly()
+    {
+        Set<String> set = this.serviceDiscovery.getKVKeysOnly("service/");
+        for(String key : set)
+        {
+            System.out.printf("child key: %s\n", key);
+        }
     }
 
 }
