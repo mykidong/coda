@@ -7,16 +7,22 @@ import io.shunters.coda.discovery.ConsulSessionHolder;
 import io.shunters.coda.discovery.ServiceDiscovery;
 import io.shunters.coda.discovery.SessionHolder;
 import io.shunters.coda.util.NetworkUtils;
+import io.shunters.coda.util.RoundRobin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by mykidong on 2017-09-25.
  */
-public class BrokerController implements Controller, Runnable {
+public class BrokerController implements Controller {
 
     private static Logger log = LoggerFactory.getLogger(BrokerController.class);
 
@@ -34,7 +40,7 @@ public class BrokerController implements Controller, Runnable {
 
     private boolean shutdown = false;
 
-    private int interval = 10;
+    private int interval = 4;
 
     private int ttl = 10;
 
@@ -42,9 +48,15 @@ public class BrokerController implements Controller, Runnable {
 
     private Metadata metadata;
 
+    private List<Integer> currentBrokerIds;
+
+    private List<Integer> lastBrokerIds;
+
     private int defaultNumberOfPartitions;
 
-    private Set<String> leaderPartitions = new HashSet<>();
+    private ConcurrentMap<String, Integer> topicMap = new ConcurrentHashMap<>();
+
+    private ConcurrentMap<String, Integer> leaderPartitions = new ConcurrentHashMap<>();
 
     private final ReentrantLock reentrantLock = new ReentrantLock();
 
@@ -76,14 +88,67 @@ public class BrokerController implements Controller, Runnable {
         // run consul session holder to elect controller leader.
         controllerSessionHolder = new ConsulSessionHolder(ServiceDiscovery.SESSION_LOCK_SERVICE_CONTROLLER, ServiceDiscovery.KEY_SERVICE_CONTROLLER_LEADER, brokerId, hostName, port, ttl);
 
-        // run thread.
-        Thread t = new Thread(this);
-        t.start();
+        // run thread for electing controller.
+        new Thread(this::electController).start();
 
-        log.info("broker controller started...");
+        // run thread for updating metadata.
+        new Thread(this::updateMetadata).start();
+    }
 
-        // load metadata.
-        this.loadMetadata();
+    private void updateMetadata() {
+        while (!shutdown) {
+            this.loadMetadata();
+            log.info("metadata updated...");
+
+            this.reassignMetadata();
+            log.info("metadata reassigned...");
+
+            try {
+                Thread.sleep(interval / 2 * 1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+
+                continue;
+            }
+        }
+    }
+
+
+    private void electController() {
+        while (!shutdown) {
+            // get controller leader.
+            Map<String, String> leaderMap = serviceDiscovery.getLeader(ServiceDiscovery.KEY_SERVICE_CONTROLLER_LEADER);
+
+            if (leaderMap != null) {
+                for (String k : leaderMap.keySet()) {
+                    String value = leaderMap.get(k);
+                    if (value != null) {
+                        int brokerIdToken = Integer.valueOf(value.split("-")[0]);
+                        log.info("current broker id: {}, controller leader broker id: {}", brokerId, brokerIdToken);
+
+                        if (brokerIdToken == brokerId) {
+                            this.isController = true;
+                        } else {
+                            this.isController = false;
+                        }
+
+                        break;
+                    }
+                }
+            } else {
+                this.isController = false;
+            }
+
+            log.info("current broker is controller leader: {}", this.isController);
+
+            try {
+                Thread.sleep(interval / 2 * 1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+
+                continue;
+            }
+        }
     }
 
 
@@ -97,8 +162,7 @@ public class BrokerController implements Controller, Runnable {
         return this.serviceDiscovery.getHealthServices(ServiceDiscovery.SERVICE_CONTROLLER);
     }
 
-    public boolean isLeader(String topicName, int partition)
-    {
+    public boolean isLeader(String topicName, int partition) {
         // check, if topic partition is new or not. if so, create metadata first.
         addMetadataIfNotExists(topicName, partition);
 
@@ -106,42 +170,110 @@ public class BrokerController implements Controller, Runnable {
         // but if not, Not Leader Exception thrown will be responded to the client.
         String leaderKey = ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_PREFIX + topicName + "/" + partition + ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_LEADER_SURFIX;
 
-        return leaderPartitions.contains(leaderKey);
+        return leaderPartitions.containsKey(leaderKey);
     }
 
-    private void addMetadataIfNotExists(String topicName, int partition)  {
+    private void addMetadataIfNotExists(String topicName, int partition) {
         String leaderKey = ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_PREFIX + topicName + "/" + partition + ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_LEADER_SURFIX;
         String isrKey = ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_PREFIX + topicName + "/" + partition + ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_ISR_SURFIX;
         String replicasKey = ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_PREFIX + topicName + "/" + partition + ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_REPLICAS_SURFIX;
 
-        if(!leaderPartitions.contains(leaderKey))
-        {
-            // add topic with number of partitions to topic list in consul.
-            String topicList = this.serviceDiscovery.getKVValue(ServiceDiscovery.KEY_TOPIC_LIST);
-            if(topicList != null)
-            {
-                topicList += "," + topicName + "-" + this.defaultNumberOfPartitions;
+        if (!leaderPartitions.containsKey(leaderKey)) {
+            if (!topicMap.containsKey(topicName)) {
+                // add topic with number of partitions to topic list in consul.
+                String topicList = this.serviceDiscovery.getKVValue(ServiceDiscovery.KEY_TOPIC_LIST);
+                if (topicList != null) {
+                    topicList += "," + topicName + "-" + this.defaultNumberOfPartitions;
+                } else {
+                    topicList = topicName + "-" + this.defaultNumberOfPartitions;
+                }
+                this.serviceDiscovery.setKVValue(ServiceDiscovery.KEY_TOPIC_LIST, topicList);
             }
-            else
-            {
-                topicList = topicName + "-" + this.defaultNumberOfPartitions;
+
+            // add leader.
+            this.serviceDiscovery.setKVValue(leaderKey, String.valueOf(brokerId));
+
+
+            // partition replication factor.
+            int partitionReplicationFactor = (Integer) configHandler.get(ConfigHandler.CONFIG_PARTITION_REPLICATION_FACTOR);
+
+            List<ServiceDiscovery.ServiceNode> brokerList = this.getBrokerList();
+            List<RoundRobin.Robin> robinList = new ArrayList<>();
+            for (ServiceDiscovery.ServiceNode broker : brokerList) {
+                int tempBrokerId = broker.getBrokerId();
+                robinList.add(new RoundRobin.Robin(tempBrokerId));
             }
-            this.serviceDiscovery.setKVValue(ServiceDiscovery.KEY_TOPIC_LIST, topicList);
 
-            // TODO: add leader, isr, replicas for the topic partition into consul.
-            // ...
+            // sort broker list in ascending order.
+            Collections.sort(robinList, (r1, r2) -> r1.call() - r2.call());
 
+            RoundRobin roundRobin = new RoundRobin(robinList);
+
+            boolean isFirstMatch = true;
+            StringBuilder sb = new StringBuilder();
+            int count = 0;
+            while (true) {
+                int tempBrokerId = roundRobin.next();
+                if (isFirstMatch) {
+                    if (tempBrokerId == brokerId) {
+                        sb.append(tempBrokerId);
+                        isFirstMatch = false;
+                    } else {
+                        continue;
+                    }
+                } else {
+                    sb.append(tempBrokerId);
+                }
+
+                if (count != partitionReplicationFactor - 1) {
+                    sb.append(",");
+                    count++;
+                } else {
+                    break;
+                }
+            }
+
+            // add replicas.
+            String replicas = sb.toString();
+            this.serviceDiscovery.setKVValue(replicasKey, replicas);
+
+            // add isr.
+            String isr = replicas; // first initial isr is the same as replicas.
+            this.serviceDiscovery.setKVValue(isrKey, isr);
+
+
+            // update metadata.
             this.loadMetadata();
         }
     }
 
-    public void reassignMetadata()
-    {
-        // TODO: if a broker failed, controller will reassign brokers for partition leader, isr, replicas.
+    public void reassignMetadata() {
+
+        if(this.lastBrokerIds != null)
+        {
+            int lastBrokerSize = this.lastBrokerIds.size();
+            int currentBrokerSize = this.currentBrokerIds.size();
+
+            // if brokers fail.
+            if(currentBrokerSize < lastBrokerSize)
+            {
+                List<Integer> failedBrokerIds = new ArrayList<>();
+                for(int tempBrokerId : this.lastBrokerIds)
+                {
+                    if(!this.currentBrokerIds.contains(tempBrokerId))
+                    {
+                        failedBrokerIds.add(tempBrokerId);
+                    }
+                }
+
+
+                // TODO: if a broker failed, controller will reassign brokers for partition leader, isr, replicas.
+
+            }
+        }
     }
 
-    private void loadMetadata()
-    {
+    private void loadMetadata() {
         reentrantLock.lock();
         try {
             // number of partitions.
@@ -150,16 +282,30 @@ public class BrokerController implements Controller, Runnable {
             // current broker list.
             List<ServiceDiscovery.ServiceNode> brokerList = getBrokerList();
 
+            // update broker ids.
+            // move the current broker id list to the old last broker id list.
+            if(this.currentBrokerIds != null)
+            {
+                this.lastBrokerIds = new ArrayList<>();
+                this.lastBrokerIds.addAll(this.currentBrokerIds);
+            }
+
+            // update current broker id list.
+            this.currentBrokerIds = new ArrayList<>();
+            for (ServiceDiscovery.ServiceNode broker : brokerList) {
+                int tempBrokerId = broker.getBrokerId();
+                currentBrokerIds.add(tempBrokerId);
+            }
+
             // get topic list.
             // topic list convention: [topic-name]-[number-of-partitions]
             // delimiter is comma(,)
             // example: user-2,event-2,item-2
             String topicList = this.serviceDiscovery.getKVValue(ServiceDiscovery.KEY_TOPIC_LIST);
 
-            Map<String, Integer> topicMap = null;
-            if (topicList != null) {
-                topicMap = new HashMap<>();
+            this.topicMap = new ConcurrentHashMap<>();
 
+            if (topicList != null) {
                 String[] topicTokens = topicList.split(",");
 
                 for (String topicToken : topicTokens) {
@@ -177,7 +323,7 @@ public class BrokerController implements Controller, Runnable {
             }
 
             List<TopicMetadata> topicMetadataList = new ArrayList<>();
-            this.leaderPartitions = new HashSet<>();
+            this.leaderPartitions = new ConcurrentHashMap<>();
 
             for (String topicName : topicMap.keySet()) {
                 int numberOfPartitions = topicMap.get(topicName);
@@ -193,9 +339,8 @@ public class BrokerController implements Controller, Runnable {
                     int leader = Integer.valueOf(serviceDiscovery.getKVValue(leaderKey));
 
                     // if current broker is leader for this topic partition.
-                    if(leader == brokerId)
-                    {
-                        leaderPartitions.add(leaderKey);
+                    if (leader == brokerId) {
+                        leaderPartitions.put(leaderKey, leader);
                     }
 
 
@@ -230,11 +375,10 @@ public class BrokerController implements Controller, Runnable {
             metadata.setNumberOfPartitions(defaultNumberOfPartitions);
             metadata.setBrokerList(brokerList);
             metadata.setTopicMetadataList(topicMetadataList);
-        }finally {
+        } finally {
             reentrantLock.unlock();
         }
     }
-
 
 
     @Override
@@ -242,56 +386,9 @@ public class BrokerController implements Controller, Runnable {
         return metadata;
     }
 
-    @Override
-    public void run() {
-
-        while (!shutdown)
-        {
-            // get controller leader.
-            Map<String, String> leaderMap = serviceDiscovery.getLeader(ServiceDiscovery.KEY_SERVICE_CONTROLLER_LEADER);
-
-            if (leaderMap != null) {
-                for (String k : leaderMap.keySet()) {
-                    String value = leaderMap.get(k);
-                    if(value != null)
-                    {
-                        int brokerIdToken = Integer.valueOf(value.split("-")[0]);
-                        log.info("current broker id: {}, controller leader broker id: {}", brokerId, brokerIdToken);
-
-                        if(brokerIdToken == brokerId)
-                        {
-                            this.isController = true;
-                        }
-                        else
-                        {
-                            this.isController = false;
-                        }
-
-                        break;
-                    }
-                }
-            }
-            else {
-                this.isController = false;
-            }
-
-            log.info("current broker is controller leader: {}", this.isController);
-
-            try {
-                Thread.sleep(interval / 2 * 1000);
-            } catch (InterruptedException e)
-            {
-                e.printStackTrace();
-
-                continue;
-            }
-        }
-
-    }
 
     @Override
-    public void shutdown()
-    {
+    public void shutdown() {
         this.controllerSessionHolder.shutdown();
         shutdown = true;
     }

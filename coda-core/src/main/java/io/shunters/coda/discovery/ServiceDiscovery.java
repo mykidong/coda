@@ -86,5 +86,10 @@ public interface ServiceDiscovery {
         {
             return id + "-" + host + "-" + port;
         }
+
+        public int getBrokerId()
+        {
+            return Integer.valueOf(this.id.split("-")[0]);
+        }
     }
 }
