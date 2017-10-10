@@ -20,8 +20,8 @@ import java.util.*;
 /**
  * Leader Election:
  * 1. create session: curl  -X PUT -d '{"Name": "coda"}' http://localhost:8500/v1/session/create
- * 2. acquire lock: curl -X PUT -d <body> http://localhost:8500/v1/kv/<key>?acquire=<session>
- * 3. discover leader: curl  http://localhost:8500/v1/kv/<key>
+ * 2. acquire lock: curl -X PUT -d [body] http://localhost:8500/v1/kv/[key]?acquire=[session]
+ * 3. discover leader: curl  http://localhost:8500/v1/kv/[key]
  */
 public class ConsulServiceDiscovery implements ServiceDiscovery {
 
@@ -60,7 +60,7 @@ public class ConsulServiceDiscovery implements ServiceDiscovery {
         client = new ConsulClient(agentHost, agentPort);
         sessionClient = new SessionConsulClient(agentHost, agentPort);
 
-        log.info("client info " + client.toString());
+        log.info("consul client info: " + client.toString());
     }
 
     /**
