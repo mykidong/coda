@@ -168,15 +168,15 @@ public class BrokerController implements Controller {
 
         // if current broker is the leader for the topic partition, produce / fetch request is acceptable,
         // but if not, Not Leader Exception thrown will be responded to the client.
-        String leaderKey = ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_PREFIX + topicName + "/" + partition + ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_LEADER_SURFIX;
+        String leaderKey = this.makeLeaderKey(topicName, partition);
 
         return leaderPartitions.containsKey(leaderKey);
     }
 
     private void addMetadataIfNotExists(String topicName, int partition) {
-        String leaderKey = ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_PREFIX + topicName + "/" + partition + ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_LEADER_SURFIX;
-        String isrKey = ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_PREFIX + topicName + "/" + partition + ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_ISR_SURFIX;
-        String replicasKey = ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_PREFIX + topicName + "/" + partition + ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_REPLICAS_SURFIX;
+        String leaderKey = this.makeLeaderKey(topicName, partition);
+        String isrKey = this.makeIsrKey(topicName, partition);
+        String replicasKey = this.makeReplicasKey(topicName, partition);
 
         if (!leaderPartitions.containsKey(leaderKey)) {
             if (!topicMap.containsKey(topicName)) {
@@ -198,43 +198,9 @@ public class BrokerController implements Controller {
             int partitionReplicationFactor = (Integer) configHandler.get(ConfigHandler.CONFIG_PARTITION_REPLICATION_FACTOR);
 
             List<ServiceDiscovery.ServiceNode> brokerList = this.getBrokerList();
-            List<RoundRobin.Robin> robinList = new ArrayList<>();
-            for (ServiceDiscovery.ServiceNode broker : brokerList) {
-                int tempBrokerId = broker.getBrokerId();
-                robinList.add(new RoundRobin.Robin(tempBrokerId));
-            }
-
-            // sort broker list in ascending order.
-            Collections.sort(robinList, (r1, r2) -> r1.call() - r2.call());
-
-            RoundRobin roundRobin = new RoundRobin(robinList);
-
-            boolean isFirstMatch = true;
-            StringBuilder sb = new StringBuilder();
-            int count = 0;
-            while (true) {
-                int tempBrokerId = roundRobin.next();
-                if (isFirstMatch) {
-                    if (tempBrokerId == brokerId) {
-                        sb.append(tempBrokerId);
-                        isFirstMatch = false;
-                    } else {
-                        continue;
-                    }
-                } else {
-                    sb.append(tempBrokerId);
-                }
-
-                if (count != partitionReplicationFactor - 1) {
-                    sb.append(",");
-                    count++;
-                } else {
-                    break;
-                }
-            }
 
             // add replicas.
-            String replicas = sb.toString();
+            String replicas = makeReplicas(brokerList, brokerId, partitionReplicationFactor);
             this.serviceDiscovery.setKVValue(replicasKey, replicas);
 
             // add isr.
@@ -247,30 +213,134 @@ public class BrokerController implements Controller {
         }
     }
 
-    public void reassignMetadata() {
+    private RoundRobin makeBrokerListRoundRobin(List<ServiceDiscovery.ServiceNode> brokerList) {
+        List<RoundRobin.Robin> robinList = new ArrayList<>();
+        for (ServiceDiscovery.ServiceNode broker : brokerList) {
+            int tempBrokerId = broker.getBrokerId();
+            robinList.add(new RoundRobin.Robin(tempBrokerId));
+        }
 
-        if(this.lastBrokerIds != null)
-        {
-            int lastBrokerSize = this.lastBrokerIds.size();
-            int currentBrokerSize = this.currentBrokerIds.size();
+        // sort broker list in ascending order.
+        Collections.sort(robinList, (r1, r2) -> r1.call() - r2.call());
 
-            // if brokers fail.
-            if(currentBrokerSize < lastBrokerSize)
-            {
-                List<Integer> failedBrokerIds = new ArrayList<>();
-                for(int tempBrokerId : this.lastBrokerIds)
-                {
-                    if(!this.currentBrokerIds.contains(tempBrokerId))
-                    {
-                        failedBrokerIds.add(tempBrokerId);
-                    }
+        return new RoundRobin(robinList);
+    }
+
+    private String makeReplicas(List<ServiceDiscovery.ServiceNode> brokerList, int brokerId, int partitionReplicationFactor) {
+        RoundRobin roundRobin = makeBrokerListRoundRobin(brokerList);
+
+        boolean isFirstMatch = true;
+        StringBuilder sb = new StringBuilder();
+        int count = 0;
+        while (true) {
+            int tempBrokerId = roundRobin.next();
+            if (isFirstMatch) {
+                if (tempBrokerId == brokerId) {
+                    sb.append(tempBrokerId);
+                    isFirstMatch = false;
+                } else {
+                    continue;
                 }
+            } else {
+                sb.append(tempBrokerId);
+            }
 
-
-                // TODO: if a broker failed, controller will reassign brokers for partition leader, isr, replicas.
-
+            if (count != partitionReplicationFactor - 1) {
+                sb.append(",");
+                count++;
+            } else {
+                break;
             }
         }
+
+        return sb.toString();
+    }
+
+    public void reassignMetadata() {
+        // if this broker is controller, reassign brokers for partition leader, isr, replicas.
+        if (isController) {
+            if (this.lastBrokerIds != null) {
+
+                List<ServiceDiscovery.ServiceNode> brokerList = this.getBrokerList();
+
+                int partitionReplicationFactor = (Integer) configHandler.get(ConfigHandler.CONFIG_PARTITION_REPLICATION_FACTOR);
+
+                int lastBrokerSize = this.lastBrokerIds.size();
+                int currentBrokerSize = this.currentBrokerIds.size();
+
+                RoundRobin roundRobin = makeBrokerListRoundRobin(brokerList);
+
+                // if brokers fail or new brokers are added.
+                if (currentBrokerSize != lastBrokerSize) {
+
+                    // refresh leader partition map first.
+                    this.leaderPartitions = new ConcurrentHashMap<>();
+
+                    // controller will reassign brokers for partition leader, isr, replicas.
+
+                    // update metadata on local first.
+                    this.metadata.setBrokerList(brokerList);
+
+                    List<TopicMetadata> topicMetadataList = this.metadata.getTopicMetadataList();
+                    for (TopicMetadata topicMetadata : topicMetadataList) {
+                        String topicName = topicMetadata.getTopicName();
+
+
+                        List<PartitionMetadata> partitionMetadataList = topicMetadata.getPartitionMetadataList();
+                        for (PartitionMetadata partitionMetadata : partitionMetadataList) {
+                            int partition = partitionMetadata.getPartition();
+                            int leader = roundRobin.next();
+
+                            String replicaStr = makeReplicas(brokerList, leader, partitionReplicationFactor);
+
+                            List<Integer> isr = new ArrayList<>();
+                            for (String replica : replicaStr.split(",")) {
+                                isr.add(Integer.valueOf(replica));
+                            }
+
+                            List<Integer> replicas = isr;
+
+                            partitionMetadata.setPartition(partition);
+                            partitionMetadata.setLeader(leader);
+                            partitionMetadata.setIsr(isr);
+                            partitionMetadata.setReplicas(replicas);
+
+                            // update metadata onto remote consul.
+                            String leaderKey = this.makeLeaderKey(topicName, partition);
+                            String isrKey = this.makeIsrKey(topicName, partition);
+                            String replicasKey = this.makeReplicasKey(topicName, partition);
+
+                            // update leader.
+                            this.serviceDiscovery.setKVValue(leaderKey, String.valueOf(leader));
+
+                            // update replicas.
+                            this.serviceDiscovery.setKVValue(replicasKey, replicaStr);
+
+                            // update isr.
+                            this.serviceDiscovery.setKVValue(isrKey, replicaStr);
+
+
+                            // if current broker is leader for this topic partition.
+                            if (leader == brokerId) {
+                                leaderPartitions.put(leaderKey, leader);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private String makeLeaderKey(String topicName, int partition) {
+        return ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_PREFIX + topicName + "/" + partition + ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_LEADER_SURFIX;
+    }
+
+    private String makeIsrKey(String topicName, int partition) {
+        return ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_PREFIX + topicName + "/" + partition + ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_ISR_SURFIX;
+    }
+
+    private String makeReplicasKey(String topicName, int partition) {
+        return ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_PREFIX + topicName + "/" + partition + ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_REPLICAS_SURFIX;
     }
 
     private void loadMetadata() {
@@ -284,8 +354,7 @@ public class BrokerController implements Controller {
 
             // update broker ids.
             // move the current broker id list to the old last broker id list.
-            if(this.currentBrokerIds != null)
-            {
+            if (this.currentBrokerIds != null) {
                 this.lastBrokerIds = new ArrayList<>();
                 this.lastBrokerIds.addAll(this.currentBrokerIds);
             }
@@ -332,9 +401,9 @@ public class BrokerController implements Controller {
 
                 for (int partition = 0; partition < numberOfPartitions; partition++) {
 
-                    String leaderKey = ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_PREFIX + topicName + "/" + partition + ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_LEADER_SURFIX;
-                    String isrKey = ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_PREFIX + topicName + "/" + partition + ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_ISR_SURFIX;
-                    String replicasKey = ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_PREFIX + topicName + "/" + partition + ServiceDiscovery.KEY_TOPIC_PARTITION_BROKER_REPLICAS_SURFIX;
+                    String leaderKey = this.makeLeaderKey(topicName, partition);
+                    String isrKey = this.makeIsrKey(topicName, partition);
+                    String replicasKey = this.makeReplicasKey(topicName, partition);
 
                     int leader = Integer.valueOf(serviceDiscovery.getKVValue(leaderKey));
 
