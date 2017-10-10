@@ -188,6 +188,8 @@ public class BrokerController implements Controller {
                     topicList = topicName + "-" + this.defaultNumberOfPartitions;
                 }
                 this.serviceDiscovery.setKVValue(ServiceDiscovery.KEY_TOPIC_LIST, topicList);
+
+                topicMap.put(topicName, this.defaultNumberOfPartitions);
             }
 
             // add leader.
@@ -224,6 +226,30 @@ public class BrokerController implements Controller {
         Collections.sort(robinList, (r1, r2) -> r1.call() - r2.call());
 
         return new RoundRobin(robinList);
+    }
+
+    private int newLeader(List<Integer> isr, int oldLeader) {
+        List<RoundRobin.Robin> robinList = new ArrayList<>();
+        for (int tempBrokerId : isr) {
+            robinList.add(new RoundRobin.Robin(tempBrokerId));
+        }
+
+        // sort broker list in ascending order.
+        Collections.sort(robinList, (r1, r2) -> r1.call() - r2.call());
+
+        RoundRobin roundRobin = new RoundRobin(robinList);
+
+        int nextLeader = -1;
+
+        while (true) {
+            int tempBrokerId = roundRobin.next();
+            if (tempBrokerId == oldLeader) {
+                nextLeader = roundRobin.next();
+                break;
+            }
+        }
+
+        return nextLeader;
     }
 
     private String makeReplicas(List<ServiceDiscovery.ServiceNode> brokerList, int brokerId, int partitionReplicationFactor) {
@@ -268,10 +294,17 @@ public class BrokerController implements Controller {
                 int lastBrokerSize = this.lastBrokerIds.size();
                 int currentBrokerSize = this.currentBrokerIds.size();
 
-                RoundRobin roundRobin = makeBrokerListRoundRobin(brokerList);
+                // if brokers fail.
+                if (currentBrokerSize < lastBrokerSize) {
 
-                // if brokers fail or new brokers are added.
-                if (currentBrokerSize != lastBrokerSize) {
+                    List<Integer> failedBrokerIds = new ArrayList<>();
+                    for (int tempBrokerId : this.lastBrokerIds) {
+                        if (!this.currentBrokerIds.contains(tempBrokerId)) {
+                            failedBrokerIds.add(tempBrokerId);
+                        }
+                    }
+
+                    // if a broker failed, controller will reassign brokers for partition leader, isr, replicas.
 
                     // refresh leader partition map first.
                     this.leaderPartitions = new ConcurrentHashMap<>();
@@ -289,8 +322,16 @@ public class BrokerController implements Controller {
                         List<PartitionMetadata> partitionMetadataList = topicMetadata.getPartitionMetadataList();
                         for (PartitionMetadata partitionMetadata : partitionMetadataList) {
                             int partition = partitionMetadata.getPartition();
-                            int leader = roundRobin.next();
+                            int oldLeader = partitionMetadata.getLeader();
+                            List<Integer> oldIsr = partitionMetadata.getIsr();
 
+                            int leader = oldLeader;
+                            // if this old leader is a failed broker, elect new leader from the old isr list.
+                            if (failedBrokerIds.contains(oldLeader)) {
+                                leader = newLeader(oldIsr, oldLeader);
+                            }
+
+                            // replica string line.
                             String replicaStr = makeReplicas(brokerList, leader, partitionReplicationFactor);
 
                             List<Integer> isr = new ArrayList<>();
@@ -298,6 +339,7 @@ public class BrokerController implements Controller {
                                 isr.add(Integer.valueOf(replica));
                             }
 
+                            // init. replicas is the same as isr.
                             List<Integer> replicas = isr;
 
                             partitionMetadata.setPartition(partition);
@@ -326,6 +368,18 @@ public class BrokerController implements Controller {
                             }
                         }
                     }
+
+                }
+                // if new brokers are added.
+                else if (currentBrokerSize > lastBrokerSize) {
+                    List<Integer> addedBrokerIds = new ArrayList<>();
+                    for (int tempBrokerId : this.currentBrokerIds) {
+                        if (!this.lastBrokerIds.contains(tempBrokerId)) {
+                            addedBrokerIds.add(tempBrokerId);
+                        }
+                    }
+
+                    // TODO: if new brokers are added.
                 }
             }
         }
@@ -405,7 +459,13 @@ public class BrokerController implements Controller {
                     String isrKey = this.makeIsrKey(topicName, partition);
                     String replicasKey = this.makeReplicasKey(topicName, partition);
 
-                    int leader = Integer.valueOf(serviceDiscovery.getKVValue(leaderKey));
+                    String leaderRet = serviceDiscovery.getKVValue(leaderKey);
+                    // if leader for the current partition does not exist, continue to next partition.
+                    if (leaderRet == null) {
+                        continue;
+                    }
+
+                    int leader = Integer.valueOf(leaderRet);
 
                     // if current broker is leader for this topic partition.
                     if (leader == brokerId) {
