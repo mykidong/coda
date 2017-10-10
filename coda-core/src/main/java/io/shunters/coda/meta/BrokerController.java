@@ -239,17 +239,17 @@ public class BrokerController implements Controller {
 
         RoundRobin roundRobin = new RoundRobin(robinList);
 
-        int nextLeader = -1;
+        int newLeader = -1;
 
         while (true) {
             int tempBrokerId = roundRobin.next();
             if (tempBrokerId == oldLeader) {
-                nextLeader = roundRobin.next();
+                newLeader = roundRobin.next();
                 break;
             }
         }
 
-        return nextLeader;
+        return newLeader;
     }
 
     private String makeReplicas(List<ServiceDiscovery.ServiceNode> brokerList, int brokerId, int partitionReplicationFactor) {
